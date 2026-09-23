@@ -1,4 +1,4 @@
-# Hybrid Adapter Pack v0.1 — HAP-002..010
+# Hybrid Adapter Pack v0.1 — HAP-002..013
 
 ## Status
 
@@ -59,9 +59,30 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - compact donor core mount
 - donor conversion rules that preserve the functional ball path
 
+
+
+### HAP-011 — Donor Registry & License Gate
+- 9 donor candidates registered with exact source paths and SHA-256 values
+- 8 candidates from the audited CC-Attribution collection are conversion-ready
+- Snake remains HOLD_LICENSE because its original license is unconfirmed
+- donor identity is verified before conversion
+
+### HAP-012 — Local Donor Conversion Runner
+- `BUILD_DONOR_CONVERSION.ps1` extracts only the selected donor from the user's local `lego-umbau.zip`
+- exact SHA-256 must match the registry
+- OpenSCAD fuses the donor with the appropriate HAP underbody mount
+- no donor STL is stored in this GitHub repository
+- every generated derivative receives an attribution receipt
+
+### HAP-013 — Show-Module Conversion Gate
+- initial candidates: Straight, large curve, S-curve, crossing, spiral-to-fall, loop, Whoopy jump and Solenoid S-curve
+- light and reinforced underbody mounts are available
+- rolling regression test matrix added
+- donor conversions remain GENERATED until real print + marble-run validation passes
+
 ## Current automated build
 
-Expected output: **41 STL files**.
+Expected output: **44 STL files**.
 
 Windows:
 
@@ -69,7 +90,7 @@ Windows:
 
 CI packages the complete result as:
 
-    HAP_v0.1_TECHNIC_STABILITY_DONOR.zip
+    HAP_v0.1_DONOR_PIPELINE.zip
 
 ## Interface SSOT
 
@@ -98,6 +119,10 @@ Fit-critical interfaces remain provisional:
 - STRUCTURAL_TEST_MATRIX_v0.1.md
 - TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md
 - DONOR_CONVERSION_RULES_v0.1.md
+- donors/DONOR_REGISTRY_v0.1.csv
+- donors/DONOR_ATTRIBUTION_v0.1.md
+- donors/DONOR_PIPELINE_v0.1.md
+- donors/DONOR_TEST_MATRIX_v0.1.md
 
 ## Architecture
 
@@ -122,4 +147,8 @@ Fit-critical interfaces remain provisional:
 - Technic family: BUILD-DEFINED / NOT PHYSICALLY VALIDATED
 - Outrigger family: BUILD-DEFINED / NOT PHYSICALLY VALIDATED
 - Donor conversion blanks: IMPLEMENTED
-- Actual donor show-part conversions: LOCKED pending fit gate
+- License-aware donor registry: IMPLEMENTED
+- Local hash-checked donor converter: IMPLEMENTED
+- Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
+- Snake donor: HOLD_LICENSE
+- Actual printed donor derivatives: NOT YET PHYSICALLY VALIDATED
