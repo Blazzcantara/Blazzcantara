@@ -1,4 +1,4 @@
-# Hybrid Adapter Pack v0.1 — HAP-002..013
+# Hybrid Adapter Pack v0.1 — HAP-002..016
 
 ## Status
 
@@ -80,9 +80,31 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - rolling regression test matrix added
 - donor conversions remain GENERATED until real print + marble-run validation passes
 
+
+
+### HAP-014 — Donor Recipe Profiles
+- per-donor mount recipe registry
+- mount style plus X/Y/Z offsets and rotation
+- priority, risk class and rolling-test order
+- Snake remains blocked by the license gate
+
+### HAP-015 — Batch Donor Conversion
+- one command can preflight or convert all eligible registered donors from the local archive
+- batch manifest in CSV + JSON
+- per-output SHA-256
+- per-donor attribution + evidence receipts
+- final local batch ZIP
+
+### HAP-016 — Converter QA / Synthetic Smoke Gate
+- original synthetic donor fixture generated in CI
+- external import path tested without embedding third-party donor geometry
+- HEX / HEX_REINFORCED / RECT fusion paths tested
+- local BUILD_ALL.ps1 performs the same geometry smoke gate
+- CI report distinguishes geometry PASS from physical PASS
+
 ## Current automated build
 
-Expected output: **44 STL files**.
+Expected core output: **44 STL files** plus a 4-STL synthetic donor smoke-test set.
 
 Windows:
 
@@ -90,7 +112,7 @@ Windows:
 
 CI packages the complete result as:
 
-    HAP_v0.1_DONOR_PIPELINE.zip
+    HAP_v0.1_DONOR_BATCH_QA.zip
 
 ## Interface SSOT
 
@@ -123,6 +145,8 @@ Fit-critical interfaces remain provisional:
 - donors/DONOR_ATTRIBUTION_v0.1.md
 - donors/DONOR_PIPELINE_v0.1.md
 - donors/DONOR_TEST_MATRIX_v0.1.md
+- donors/DONOR_RECIPES_v0.1.csv
+- donors/DONOR_BATCH_QA_GUIDE_v0.1.md
 
 ## Architecture
 
@@ -149,6 +173,9 @@ Fit-critical interfaces remain provisional:
 - Donor conversion blanks: IMPLEMENTED
 - License-aware donor registry: IMPLEMENTED
 - Local hash-checked donor converter: IMPLEMENTED
+- Recipe-driven per-donor mount transforms: IMPLEMENTED
+- Batch conversion + manifest + SHA256 evidence: IMPLEMENTED
+- Synthetic converter smoke gate: IMPLEMENTED
 - Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
 - Snake donor: HOLD_LICENSE
 - Actual printed donor derivatives: NOT YET PHYSICALLY VALIDATED
