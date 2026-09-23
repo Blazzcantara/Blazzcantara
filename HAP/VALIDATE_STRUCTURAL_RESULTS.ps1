@@ -19,15 +19,21 @@ $profile = Get-Content -Raw -Path $PhysicalProfileJson | ConvertFrom-Json
 $rows = @(Import-Csv $ResultsCsv)
 
 $requiredIds = @(
+  "STRUCT-SKY2x4",
   "STRUCT-SKY4x4",
+  "STRUCT-SKY4x6",
   "STRUCT-BRIDGE32",
   "STRUCT-BRIDGE40",
+  "STRUCT-BRIDGE-GT32",
+  "STRUCT-FOOT32",
+  "STRUCT-FOOT40",
   "STRUCT-OUT40",
-  "STRUCT-TECH3H"
+  "STRUCT-TECH3H",
+  "STRUCT-TECH5H"
 )
 
 if ($rows.Count -ne $requiredIds.Count) {
-  throw "Expected 5 structural rows, found $($rows.Count)."
+  throw "Expected 11 structural rows, found $($rows.Count)."
 }
 
 $ids = @($rows | ForEach-Object { $_.module_id })
