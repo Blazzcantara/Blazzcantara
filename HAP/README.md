@@ -1,4 +1,4 @@
-# Hybrid Adapter Pack v0.1 — HAP-002..005
+# Hybrid Adapter Pack v0.1 — HAP-002..007
 
 ## Status
 
@@ -35,6 +35,27 @@ This branch extends the first calibration baseline into a modular LEGO→GraviTr
 - Y +4 mm offset
 - 30° full-tile orientation variant
 - lightweight 4×4 direct-offset prototype
+
+
+
+### HAP-006 — Sky Core Support Family
+- compact 2×4 LEGO support with replaceable HAP core
+- standard 4×4 Sky support
+- wider 4×6 high-rigidity support
+- all variants reuse the same core-clearance SSOT
+
+### HAP-007 — Bridge / Multi-Anchor Family
+- 8×4 carrier with two replaceable core sockets at 32 mm spacing
+- 10×4 carrier with two replaceable core sockets at 40 mm spacing
+- 8×4 carrier with two direct GT support interfaces at 32 mm spacing
+- dedicated structural validation matrix
+- show-module conversion remains locked pending physical interface validation
+
+## Structural validation
+
+See STRUCTURAL_TEST_MATRIX_v0.1.md.
+
+The Sky/Bridge family is deliberately generated now so CI and geometry regressions can be tested before physical calibration is complete. This does not upgrade its reality state: LEGO clutch, GT male fit and removable-core clearance remain provisional until printed.
 
 ## Interface SSOT
 
@@ -83,6 +104,7 @@ The full-hex carrier can therefore be reused while only the center core or lower
 ## Reality state
 
 - Parametric CAD: IMPLEMENTED
+- Sky/Bridge structural family: IMPLEMENTED
 - Automated STL generation definition: IMPLEMENTED
 - Interface SSOT: IMPLEMENTED
 - Physical LEGO clutch: NOT VALIDATED
