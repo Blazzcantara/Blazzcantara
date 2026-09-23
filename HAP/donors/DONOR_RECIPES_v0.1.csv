@@ -1,0 +1,10 @@
+donor_id,mount_style,mount_x_mm,mount_y_mm,mount_z_mm,mount_rotation_deg,priority,risk_class,rolling_test_order,recipe_state,notes
+SHOW-ST01,HEX,0.0,0.0,0.0,0.0,1,LOW,1,NOMINAL,Centered light mount for first regression baseline
+SHOW-CV01,HEX,0.0,0.0,0.0,0.0,2,LOW,2,NOMINAL,Centered light mount; verify curve underside contact after first render
+SHOW-SC01,HEX,0.0,0.0,0.0,0.0,3,MEDIUM,3,NOMINAL,Centered light mount; watch torsional rocking
+SHOW-X01,HEX_REINFORCED,0.0,0.0,0.0,0.0,4,MEDIUM,4,NOMINAL,Reinforced mount for crossing load paths
+SHOW-SP01,HEX_REINFORCED,0.0,0.0,0.0,0.0,5,HIGH,5,NOMINAL,Dynamic spiral candidate; physical rolling gate required
+SHOW-LP01,HEX_REINFORCED,0.0,0.0,0.0,0.0,6,HIGH,6,NOMINAL,Loop candidate; high dynamic loading
+SHOW-WP01,HEX_REINFORCED,0.0,0.0,0.0,0.0,7,HIGH,7,NOMINAL,Jump candidate; highest launch sensitivity
+SHOW-SOL01,HEX,0.0,0.0,0.0,0.0,8,MEDIUM,8,NOMINAL,Solenoid S-curve baseline
+SHOW-SNAKE01,BLOCKED,0.0,0.0,0.0,0.0,99,UNKNOWN,99,HOLD_LICENSE,No automated conversion until original source license is confirmed
