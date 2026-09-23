@@ -321,6 +321,132 @@ module lego_to_gt_offset_direct(
     }
 }
 
+
+// -------------------------
+// HAP-006 modular Sky supports
+// -------------------------
+module core_socket_top(
+    outer_flat=gt_support_outer_flat,
+    core_clearance=0.30,
+    z=0,
+    h=full_hex_shell_h
+) {
+    socket_flat = core_nominal_flat + core_clearance;
+
+    difference() {
+        hex_prism(outer_flat,h,z,0);
+
+        translate([0,0,z+h-core_h])
+            hex_prism(socket_flat,core_h+eps,0,0);
+
+        translate([0,0,z-eps])
+            hex_prism(core_nominal_flat-3.0,1.00+eps,0,0);
+    }
+}
+
+module lego_to_core_cap(
+    nx=4,
+    ny=4,
+    xy_scale=1.0,
+    core_clearance=0.30,
+    transition_h=10.0
+) {
+    w = nx*lego_pitch - lego_gap;
+    d = ny*lego_pitch - lego_gap;
+    z0 = lego_plate_h;
+    z1 = lego_plate_h + transition_h;
+
+    union() {
+        lego_tile_bottom(nx,ny,xy_scale);
+
+        difference() {
+            hull() {
+                translate([0,0,z0])
+                    centered_cube_xy(w*0.94,d*0.94,0.22,0);
+
+                translate([0,0,z1])
+                    linear_extrude(height=0.22)
+                        hex2d(gt_support_outer_flat);
+            }
+
+            // Internal relief keeps the transition light while leaving a load path.
+            translate([0,0,z0+0.8])
+                hex_prism(gt_support_outer_flat-7.0,transition_h+0.5,0,0);
+        }
+
+        core_socket_top(
+            gt_support_outer_flat,
+            core_clearance,
+            z1,
+            full_hex_shell_h
+        );
+    }
+}
+
+// -------------------------
+// HAP-007 Bridge / multi-anchor carriers
+// -------------------------
+module bridge_dual_core_carrier(
+    nx=8,
+    ny=4,
+    socket_spacing=32.0,
+    xy_scale=1.0,
+    core_clearance=0.30,
+    deck_h=5.20
+) {
+    w = nx*lego_pitch - lego_gap;
+    d = ny*lego_pitch - lego_gap;
+    socket_flat = core_nominal_flat + core_clearance;
+    z0 = lego_plate_h;
+
+    union() {
+        lego_tile_bottom(nx,ny,xy_scale);
+
+        difference() {
+            centered_cube_xy(w,d,deck_h,z0);
+
+            for (sx=[-socket_spacing/2,socket_spacing/2]) {
+                translate([sx,0,z0+deck_h-core_h])
+                    hex_prism(socket_flat,core_h+eps,0,0);
+
+                translate([sx,0,z0-eps])
+                    hex_prism(core_nominal_flat-3.0,1.00+eps,0,0);
+            }
+
+            // Long underside relief reduces mass while preserving perimeter and socket zones.
+            centered_cube_xy(
+                max(8,w-2*lego_pitch),
+                max(8,d-2*lego_pitch),
+                1.20,
+                z0+0.60
+            );
+        }
+    }
+}
+
+module bridge_dual_gt_carrier(
+    nx=8,
+    ny=4,
+    support_spacing=32.0,
+    xy_scale=1.0,
+    male_flat=29.78,
+    deck_h=3.20
+) {
+    w = nx*lego_pitch - lego_gap;
+    d = ny*lego_pitch - lego_gap;
+    z0 = lego_plate_h;
+    z1 = z0 + deck_h;
+
+    union() {
+        lego_tile_bottom(nx,ny,xy_scale);
+        centered_cube_xy(w,d,deck_h,z0);
+
+        for (sx=[-support_spacing/2,support_spacing/2])
+            translate([sx,0,0])
+                gt_support_top(male_flat,z1);
+    }
+}
+
 // -------------------------
 // Output selector
 // -------------------------
@@ -372,6 +498,24 @@ else if (PART == "LG4x4_GT_OFFSET_DIRECT")
         GT_MALE_FLAT,
         10.0
     );
+
+else if (PART == "SKY_CORE_2x4")
+    lego_to_core_cap(2,4,LEGO_SCALE,CORE_CLEARANCE,16.0);
+
+else if (PART == "SKY_CORE_4x4")
+    lego_to_core_cap(4,4,LEGO_SCALE,CORE_CLEARANCE,10.0);
+
+else if (PART == "SKY_CORE_4x6")
+    lego_to_core_cap(4,6,LEGO_SCALE,CORE_CLEARANCE,8.0);
+
+else if (PART == "BRIDGE_DUAL_CORE_8x4")
+    bridge_dual_core_carrier(8,4,32.0,LEGO_SCALE,CORE_CLEARANCE,5.20);
+
+else if (PART == "BRIDGE_DUAL_CORE_10x4")
+    bridge_dual_core_carrier(10,4,40.0,LEGO_SCALE,CORE_CLEARANCE,5.20);
+
+else if (PART == "BRIDGE_DUAL_GT_8x4")
+    bridge_dual_gt_carrier(8,4,32.0,LEGO_SCALE,GT_MALE_FLAT,3.20);
 
 else
     assert(false,str("Unknown PART: ",PART));
