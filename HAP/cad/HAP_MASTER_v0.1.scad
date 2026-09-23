@@ -1,5 +1,5 @@
 /*
-Hybrid Adapter Pack v0.1 — HAP-002..013 Parametric Master
+Hybrid Adapter Pack v0.1 — HAP-002..022 Parametric Master
 Original parametric compatibility geometry.
 GENERATED != PHYSICALLY VALIDATED.
 
@@ -19,7 +19,8 @@ $fn = 72;
 // User/build parameters
 // -------------------------
 PART = is_undef(PART) ? "LG4x4_GT" : PART;
-LEGO_SCALE = is_undef(LEGO_SCALE) ? 1.000 : LEGO_SCALE;
+LEGO_SCALE = is_undef(LEGO_SCALE) ? 1.000 : LEGO_SCALE; // legacy compatibility only
+LEGO_CLUTCH_DELTA = is_undef(LEGO_CLUTCH_DELTA) ? 0.00 : LEGO_CLUTCH_DELTA;
 GT_MALE_FLAT = is_undef(GT_MALE_FLAT) ? 29.78 : GT_MALE_FLAT;
 CORE_CLEARANCE = is_undef(CORE_CLEARANCE) ? 0.30 : CORE_CLEARANCE;
 OFFSET_X = is_undef(OFFSET_X) ? 0.0 : OFFSET_X;
@@ -80,15 +81,24 @@ module hex_ring(flat_outer, wall, h, z=0, rot=0) {
 // LEGO-family underside
 // -------------------------
 module lego_tile_bottom(nx=2, ny=2, xy_scale=1.0) {
+    // LEGO grid pitch and outer footprint remain fixed.
+    // Fit is tuned only at the contact features so a 6x6 part does not
+    // accumulate grid error when calibration changes.
     w = nx*lego_pitch - lego_gap;
     d = ny*lego_pitch - lego_gap;
     cavity_h = lego_plate_h - lego_roof;
+    contact_wall = lego_wall + LEGO_CLUTCH_DELTA;
+    contact_tube_od = lego_tube_od + 2*LEGO_CLUTCH_DELTA;
 
-    scale([xy_scale,xy_scale,1])
     union() {
         difference() {
             centered_cube_xy(w,d,lego_plate_h,0);
-            centered_cube_xy(w-2*lego_wall,d-2*lego_wall,cavity_h+eps,-eps);
+            centered_cube_xy(
+                w-2*contact_wall,
+                d-2*contact_wall,
+                cavity_h+eps,
+                -eps
+            );
         }
 
         if (nx > 1 && ny > 1)
@@ -98,7 +108,7 @@ module lego_tile_bottom(nx=2, ny=2, xy_scale=1.0) {
             y = (iy-(ny-2)/2)*lego_pitch;
             translate([x,y,0])
             difference() {
-                cylinder(d=lego_tube_od,h=cavity_h+0.20);
+                cylinder(d=contact_tube_od,h=cavity_h+0.20);
                 translate([0,0,-eps])
                     cylinder(d=lego_tube_id,h=cavity_h+0.20+2*eps);
             }
@@ -107,11 +117,11 @@ module lego_tile_bottom(nx=2, ny=2, xy_scale=1.0) {
 }
 
 module clutch_label_2x2(scale_value=1.0) {
-    lego_tile_bottom(2,2,scale_value);
-    txt = str(round(scale_value*1000)/10, "%");
+    lego_tile_bottom(2,2,1.0);
+    txt = str("d",LEGO_CLUTCH_DELTA);
     translate([0,0,lego_plate_h])
         linear_extrude(height=0.35)
-            text(txt,size=3.0,halign="center",valign="center");
+            text(txt,size=2.6,halign="center",valign="center");
 }
 
 // -------------------------
@@ -342,6 +352,12 @@ module core_socket_top(
         translate([0,0,z-eps])
             hex_prism(core_nominal_flat-3.0,1.00+eps,0,0);
     }
+}
+
+module core_socket_coupon(core_clearance=0.30) {
+    // Small calibration coupon: same HAP socket geometry as production
+    // carriers without the material cost of three full-size platforms.
+    core_socket_top(38.0,core_clearance,0,full_hex_shell_h);
 }
 
 module lego_to_core_cap(
@@ -695,6 +711,9 @@ else if (PART == "GT_CORE")
 
 else if (PART == "GT_CORE_BLANK")
     gt_core_blank(core_nominal_flat,TILE_ROTATION);
+
+else if (PART == "CORE_SOCKET_COUPON")
+    core_socket_coupon(CORE_CLEARANCE);
 
 else if (PART == "FULL_HEX_OFFSET")
     lego_full_hex_offset(
