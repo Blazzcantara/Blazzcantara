@@ -187,6 +187,35 @@ jobs:
             echo "Reality state: CI_GEOMETRY_PASS_ONLY"
           } > HAP/CI_DONOR_SMOKE_REPORT.txt
 
+      - name: Validate PowerShell syntax
+        shell: pwsh
+        run: |
+          $failed = $false
+          $files = @(
+            "HAP/BUILD_ALL.ps1",
+            "HAP/BUILD_DONOR_CONVERSION.ps1",
+            "HAP/BUILD_DONOR_BATCH.ps1"
+          )
+
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $file,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+
+            if ($errors.Count -gt 0) {
+              Write-Host "PowerShell parse errors in $file" -ForegroundColor Red
+              $errors | ForEach-Object { Write-Host $_.Message -ForegroundColor Red }
+              $failed = $true
+            }
+          }
+
+          if ($failed) { exit 1 }
+          Write-Host "PowerShell syntax PASS" -ForegroundColor Green
+
       - name: Package
         shell: bash
         run: |
