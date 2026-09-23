@@ -13,6 +13,8 @@ This file is the engineering single source of truth for the current Hybrid Adapt
 | LEGO-family | tube OD | 6.50 mm | nominal |
 | LEGO-family | tube ID | 4.80 mm | nominal |
 | LEGO-family | XY scale | 1.000 | CALIBRATION REQUIRED |
+| Technic-family | hole pitch | 8.00 mm | reference |
+| Technic-family | hole diameter | 4.90 mm | CALIBRATION REQUIRED |
 | GT support | outer support hex, across flats | 46.00 mm | donor-derived nominal |
 | GT support | male hex, across flats | 29.78 mm | CALIBRATION REQUIRED |
 | GT support | male height | 2.00 mm | nominal |
@@ -31,7 +33,9 @@ Gate B — GT male support: select the best width from 29.60 / 29.70 / 29.78 / 2
 
 Gate C — replaceable core: select the best socket clearance from 0.20 / 0.30 / 0.40 mm using the same core insert.
 
-No interface value may be marked SEALED before these tests.
+Gate D — Technic hole: select the best hole diameter from 4.80 / 4.90 / 5.00 / 5.10 mm using real Technic pins.
+
+No interface value may be marked SEALED before the applicable tests.
 
 ## Architectural rule
 

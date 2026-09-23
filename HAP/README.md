@@ -1,10 +1,10 @@
-# Hybrid Adapter Pack v0.1 — HAP-002..007
+# Hybrid Adapter Pack v0.1 — HAP-002..010
 
 ## Status
 
 **ENGINEERING PROTOTYPE — GENERATED != PHYSICALLY VALIDATED**
 
-This branch extends the first calibration baseline into a modular LEGO→GraviTrax architecture.
+The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/Bridge structures, Technic side mounting, anti-twist supports and donor-conversion blanks.
 
 ## Implemented
 
@@ -25,89 +25,101 @@ This branch extends the first calibration baseline into a modular LEGO→GraviTr
 - GT male core insert
 - blank core insert
 - removable interface concept
-- dedicated physical-fit matrix
 
 ### HAP-005 — Offset / Orientation Family
-- centered full-hex carrier
-- X +4 mm offset
-- X -4 mm offset
-- X +8 mm offset
-- Y +4 mm offset
-- 30° full-tile orientation variant
-- lightweight 4×4 direct-offset prototype
-
-
+- X +4 / -4 / +8 mm and Y +4 mm variants
+- 30° full-tile orientation
+- lightweight direct offset support
 
 ### HAP-006 — Sky Core Support Family
-- compact 2×4 LEGO support with replaceable HAP core
-- standard 4×4 Sky support
-- wider 4×6 high-rigidity support
-- all variants reuse the same core-clearance SSOT
+- 2×4, 4×4 and 4×6 LEGO footprints
+- replaceable HAP core receiver
+- high-rise support use case
 
 ### HAP-007 — Bridge / Multi-Anchor Family
-- 8×4 carrier with two replaceable core sockets at 32 mm spacing
-- 10×4 carrier with two replaceable core sockets at 40 mm spacing
-- 8×4 carrier with two direct GT support interfaces at 32 mm spacing
-- dedicated structural validation matrix
-- show-module conversion remains locked pending physical interface validation
+- 8×4 dual-core carrier at 32 mm spacing
+- 10×4 dual-core carrier at 40 mm spacing
+- 8×4 dual direct-GT carrier
 
-## Structural validation
+### HAP-008 — Technic Structural Interface
+- 4 Technic-hole calibration coupons: 4.80 / 4.90 / 5.00 / 5.10 mm
+- 3-hole side-mount core bracket
+- 5-hole side-mount core bracket
+- separate physical gate for Technic pin fit
 
-See STRUCTURAL_TEST_MATRIX_v0.1.md.
+### HAP-009 — Anti-Twist / Outrigger Family
+- dual 2×2 foot support at 32 mm spacing
+- dual 2×2 foot support at 40 mm spacing
+- cross-outrigger support at 40 mm spacing
+- designed for taller LEGO columns and lateral stability
 
-The Sky/Bridge family is deliberately generated now so CI and geometry regressions can be tested before physical calibration is complete. This does not upgrade its reality state: LEGO clutch, GT male fit and removable-core clearance remain provisional until printed.
+### HAP-010 — Donor Conversion Layer
+- hex donor pad
+- rectangular donor pad
+- compact donor core mount
+- donor conversion rules that preserve the functional ball path
+
+## Current automated build
+
+Expected output: **41 STL files**.
+
+Windows:
+
+    PowerShell -ExecutionPolicy Bypass -File .\HAP\BUILD_ALL.ps1
+
+CI packages the complete result as:
+
+    HAP_v0.1_TECHNIC_STABILITY_DONOR.zip
 
 ## Interface SSOT
 
 See INTERFACE_SSOT_v0.1.md.
 
-Important nominal values:
-- LEGO pitch: 8.00 mm
-- LEGO plate height: 3.20 mm
-- GT support outer hex: 46.00 mm across flats
-- GT full tile: 59.60 mm across flats
-- GT male starting reference: 29.78 mm across flats
-- HAP core: 30.80 mm across flats
-
-All fit-critical values remain provisional until printed.
+Fit-critical interfaces remain provisional:
+- LEGO clutch scale
+- GT male support width
+- HAP replaceable-core clearance
+- Technic pin-hole diameter
 
 ## Physical validation order
 
-1. Print LEGO clutch calibration.
-2. Print GT male calibration.
-3. Select one winner for each interface.
-4. Print one GT core and the 0.20 / 0.30 / 0.40 Full-Hex socket variants.
-5. Select the best removable-core clearance.
-6. Rebuild the 4×4 support and Full-Hex platform with sealed values.
-7. Only after that unlock Snake / Spiral / Crossing / Bridge donor conversions.
+1. LEGO clutch calibration.
+2. GT male calibration.
+3. HAP core clearance calibration.
+4. Technic hole calibration.
+5. Rebuild selected structural parts with sealed values.
+6. Static rigidity tests for Sky / Bridge / Outrigger supports.
+7. Only then convert actual Snake / Spiral / Crossing / Curves donor parts.
+8. Every converted functional part receives a rolling regression test.
 
-Use PHYSICAL_TEST_MATRIX_v0.1.md to record results.
+## Documentation
 
-## Windows build
-
-    PowerShell -ExecutionPolicy Bypass -File .\HAP\BUILD_ALL.ps1
-
-The script installs OpenSCAD through winget when it cannot find it, builds all calibration and nominal prototype STLs, verifies output presence and creates a ZIP package.
+- PHYSICAL_TEST_MATRIX_v0.1.md
+- STRUCTURAL_TEST_MATRIX_v0.1.md
+- TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md
+- DONOR_CONVERSION_RULES_v0.1.md
 
 ## Architecture
 
-    GT functional module
-            |
-       GT/HAP core
-            |
-       HAP carrier
-        /   |   \
-     LEGO Technic GT
-
-The full-hex carrier can therefore be reused while only the center core or lower support changes.
+    Functional GraviTrax / donor module
+                 |
+          GT / donor interface
+                 |
+            HAP core layer
+                 |
+       carrier / offset / brace
+          /       |        \
+       LEGO    Technic    GT
 
 ## Reality state
 
 - Parametric CAD: IMPLEMENTED
-- Sky/Bridge structural family: IMPLEMENTED
-- Automated STL generation definition: IMPLEMENTED
-- Interface SSOT: IMPLEMENTED
-- Physical LEGO clutch: NOT VALIDATED
-- Physical GT fit: NOT VALIDATED
-- Replaceable core fit: NOT VALIDATED
-- Show-module conversion: LOCKED pending fit gate
+- 41-output build definition: IMPLEMENTED
+- LEGO family: GENERATED / NOT VALIDATED
+- GT interface: GENERATED / NOT VALIDATED
+- HAP core: GENERATED / NOT VALIDATED
+- Sky / Bridge family: BUILD-DEFINED / NOT PHYSICALLY VALIDATED
+- Technic family: BUILD-DEFINED / NOT PHYSICALLY VALIDATED
+- Outrigger family: BUILD-DEFINED / NOT PHYSICALLY VALIDATED
+- Donor conversion blanks: IMPLEMENTED
+- Actual donor show-part conversions: LOCKED pending fit gate
