@@ -12,6 +12,12 @@ use <HAP_MASTER_v0.1.scad>
 
 $fn = 72;
 
+// Constants required by modules imported with OpenSCAD 'use'.
+// Keep synchronized with HAP Interface SSOT / HAP_MASTER_v0.1.scad.
+core_nominal_flat = 30.80;
+core_h = 3.20;
+eps = 0.02;
+
 DONOR_FILE = is_undef(DONOR_FILE) ? "" : DONOR_FILE;
 MOUNT_STYLE = is_undef(MOUNT_STYLE) ? "HEX" : MOUNT_STYLE;
 MODE = is_undef(MODE) ? "FUSED" : MODE;
