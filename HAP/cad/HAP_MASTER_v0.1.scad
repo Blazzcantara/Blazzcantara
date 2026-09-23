@@ -447,6 +447,187 @@ module bridge_dual_gt_carrier(
     }
 }
 
+
+// -------------------------
+// HAP-008 LEGO Technic interface family
+// -------------------------
+TECHNIC_HOLE_D = is_undef(TECHNIC_HOLE_D) ? 4.90 : TECHNIC_HOLE_D;
+technic_plate_t = 6.40;
+technic_edge = 8.00;
+
+module technic_hole_x(d=4.90, len=8.0) {
+    rotate([0,90,0])
+        cylinder(d=d,h=len,center=true);
+}
+
+module technic_hole_coupon(
+    hole_d=4.90,
+    count=3
+) {
+    w = technic_plate_t;
+    d = 14.0;
+    h = (count-1)*lego_pitch + 14.0;
+
+    difference() {
+        centered_cube_xy(w,d,h,0);
+
+        for (iz=[0:count-1]) {
+            z = 7.0 + iz*lego_pitch;
+            translate([0,0,z])
+                technic_hole_x(hole_d,w+2*eps);
+        }
+    }
+}
+
+module technic_side_core(
+    holes=3,
+    hole_d=4.90,
+    core_clearance=0.30,
+    top_overhang=7.0
+) {
+    plate_h = (holes-1)*lego_pitch + 16.0;
+    plate_w = technic_plate_t;
+    plate_d = 16.0;
+    cap_z = plate_h;
+    cap_flat = gt_support_outer_flat;
+
+    union() {
+        difference() {
+            centered_cube_xy(plate_w,plate_d,plate_h,0);
+
+            for (iz=[0:holes-1]) {
+                z = 8.0 + iz*lego_pitch;
+                translate([0,0,z])
+                    technic_hole_x(hole_d,plate_w+2*eps);
+            }
+        }
+
+        // Triangular-ish printable transition to the core receiver.
+        hull() {
+            translate([0,0,plate_h-2.0])
+                centered_cube_xy(plate_w,plate_d,2.0,0);
+
+            translate([0,0,cap_z+top_overhang])
+                linear_extrude(height=0.22)
+                    hex2d(cap_flat);
+        }
+
+        core_socket_top(
+            cap_flat,
+            core_clearance,
+            cap_z+top_overhang,
+            full_hex_shell_h
+        );
+    }
+}
+
+// -------------------------
+// HAP-009 anti-twist / outrigger family
+// -------------------------
+module dual_lego_foot_core(
+    foot_nx=2,
+    foot_ny=2,
+    foot_spacing=32.0,
+    xy_scale=1.0,
+    core_clearance=0.30,
+    deck_h=4.0
+) {
+    foot_w = foot_nx*lego_pitch - lego_gap;
+    foot_d = foot_ny*lego_pitch - lego_gap;
+    deck_w = foot_spacing + foot_w;
+    deck_d = max(foot_d,gt_support_outer_flat);
+    z0 = lego_plate_h;
+
+    union() {
+        translate([-foot_spacing/2,0,0])
+            lego_tile_bottom(foot_nx,foot_ny,xy_scale);
+
+        translate([foot_spacing/2,0,0])
+            lego_tile_bottom(foot_nx,foot_ny,xy_scale);
+
+        difference() {
+            centered_cube_xy(deck_w,deck_d,deck_h,z0);
+
+            // Large reliefs leave two load paths plus the center core zone.
+            for (sx=[-foot_spacing/2,foot_spacing/2])
+                translate([sx,0,z0+0.8])
+                    centered_cube_xy(
+                        max(4,foot_w-6),
+                        max(4,foot_d-6),
+                        deck_h+eps,
+                        0
+                    );
+        }
+
+        core_socket_top(
+            gt_support_outer_flat,
+            core_clearance,
+            z0+deck_h,
+            full_hex_shell_h
+        );
+    }
+}
+
+module cross_outrigger_core(
+    foot_spacing=40.0,
+    xy_scale=1.0,
+    core_clearance=0.30,
+    deck_h=4.0
+) {
+    union() {
+        dual_lego_foot_core(2,2,foot_spacing,xy_scale,core_clearance,deck_h);
+
+        rotate([0,0,90])
+            dual_lego_foot_core(2,2,foot_spacing,xy_scale,core_clearance,deck_h);
+    }
+}
+
+// -------------------------
+// HAP-010 donor conversion blanks
+// -------------------------
+module donor_pad_hex(
+    pad_flat=gt_tile_flat,
+    pad_h=2.40,
+    core_clearance=0.30
+) {
+    socket_flat = core_nominal_flat + core_clearance;
+
+    difference() {
+        hex_prism(pad_flat,pad_h,0,0);
+
+        translate([0,0,-eps])
+            hex_prism(socket_flat,min(core_h,pad_h)+2*eps,0,0);
+    }
+}
+
+module donor_pad_rect(
+    w=48.0,
+    d=24.0,
+    pad_h=2.40,
+    core_clearance=0.30
+) {
+    socket_flat = core_nominal_flat + core_clearance;
+
+    difference() {
+        centered_cube_xy(w,d,pad_h,0);
+
+        translate([0,0,-eps])
+            hex_prism(socket_flat,min(core_h,pad_h)+2*eps,0,0);
+    }
+}
+
+module donor_core_mount(
+    pad_flat=42.0,
+    pad_h=2.40,
+    male_flat=29.78
+) {
+    union() {
+        hex_prism(core_nominal_flat,core_h,0,0);
+        hex_prism(pad_flat,pad_h,core_h,0);
+        gt_male_ring(male_flat,core_h+pad_h);
+    }
+}
+
 // -------------------------
 // Output selector
 // -------------------------
@@ -516,6 +697,33 @@ else if (PART == "BRIDGE_DUAL_CORE_10x4")
 
 else if (PART == "BRIDGE_DUAL_GT_8x4")
     bridge_dual_gt_carrier(8,4,32.0,LEGO_SCALE,GT_MALE_FLAT,3.20);
+
+else if (PART == "TECHNIC_HOLE_COUPON_3")
+    technic_hole_coupon(TECHNIC_HOLE_D,3);
+
+else if (PART == "TECHNIC_SIDE_CORE_3H")
+    technic_side_core(3,TECHNIC_HOLE_D,CORE_CLEARANCE,7.0);
+
+else if (PART == "TECHNIC_SIDE_CORE_5H")
+    technic_side_core(5,TECHNIC_HOLE_D,CORE_CLEARANCE,7.0);
+
+else if (PART == "DUAL_FOOT_CORE_S32")
+    dual_lego_foot_core(2,2,32.0,LEGO_SCALE,CORE_CLEARANCE,4.0);
+
+else if (PART == "DUAL_FOOT_CORE_S40")
+    dual_lego_foot_core(2,2,40.0,LEGO_SCALE,CORE_CLEARANCE,4.0);
+
+else if (PART == "CROSS_OUTRIGGER_CORE_S40")
+    cross_outrigger_core(40.0,LEGO_SCALE,CORE_CLEARANCE,4.0);
+
+else if (PART == "DONOR_PAD_HEX")
+    donor_pad_hex(gt_tile_flat,2.40,CORE_CLEARANCE);
+
+else if (PART == "DONOR_PAD_RECT")
+    donor_pad_rect(48.0,24.0,2.40,CORE_CLEARANCE);
+
+else if (PART == "DONOR_CORE_MOUNT")
+    donor_core_mount(42.0,2.40,GT_MALE_FLAT);
 
 else
     assert(false,str("Unknown PART: ",PART));
