@@ -1,4 +1,4 @@
-# Hybrid Adapter Pack v0.1 — HAP-002..016
+# Hybrid Adapter Pack v0.1 — HAP-002..019
 
 ## Status
 
@@ -102,6 +102,27 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - local BUILD_ALL.ps1 performs the same geometry smoke gate
 - CI report distinguishes geometry PASS from physical PASS
 
+
+
+### HAP-017 — Native Removable Connector Intake
+- adopts the donor collection's own removable connector as the preferred interface
+- exact archive path and SHA-256 are recorded in a dedicated SSOT
+- five connector-only XY calibration variants: 0.996 / 0.998 / 1.000 / 1.002 / 1.004
+- third-party source mesh remains external to the repository
+
+### HAP-018 — Native Connector → HAP Core Bridge
+- five matching core-bridge variants
+- donor-facing geometry remains the verified native removable connector
+- lower geometry uses the provisional 30.80 mm HAP core
+- dependency-free STL connectivity / watertight audit added
+
+### HAP-019 — Straight / Curve / S-Curve Physical Pilot
+- first pilot targets SHOW-ST01, SHOW-CV01 and SHOW-SC01
+- donor track meshes do not need CAD modification
+- selected HAP bridge replaces the collection's normal removable connector
+- 10-run rolling regression gate defined before higher-dynamic show modules are promoted
+- fused-underbody conversion remains available as a fallback for donor families without a removable interface
+
 ## Current automated build
 
 Expected core output: **44 STL files** plus a 4-STL synthetic donor smoke-test set.
@@ -112,7 +133,7 @@ Windows:
 
 CI packages the complete result as:
 
-    HAP_v0.1_DONOR_BATCH_QA.zip
+    HAP_v0.1_NATIVE_CONNECTOR_PILOT.zip
 
 ## Interface SSOT
 
@@ -132,8 +153,11 @@ Fit-critical interfaces remain provisional:
 4. Technic hole calibration.
 5. Rebuild selected structural parts with sealed values.
 6. Static rigidity tests for Sky / Bridge / Outrigger supports.
-7. Only then convert actual Snake / Spiral / Crossing / Curves donor parts.
-8. Every converted functional part receives a rolling regression test.
+7. Print the five native connector calibration variants and select the best tile-slot fit.
+8. Print the matching native connector → HAP core bridge.
+9. Pilot the bridge on Straight, Large Curve and S-Curve.
+10. Only after the pilot passes promote Crossing, Spiral, Loop and Whoopy.
+11. Every functional module still receives a rolling regression test.
 
 ## Documentation
 
@@ -147,6 +171,8 @@ Fit-critical interfaces remain provisional:
 - donors/DONOR_TEST_MATRIX_v0.1.md
 - donors/DONOR_RECIPES_v0.1.csv
 - donors/DONOR_BATCH_QA_GUIDE_v0.1.md
+- donors/NATIVE_CONNECTOR_SSOT_v0.1.md
+- donors/PILOT_SHOW_MODULES_v0.1.md
 
 ## Architecture
 
@@ -163,7 +189,7 @@ Fit-critical interfaces remain provisional:
 ## Reality state
 
 - Parametric CAD: IMPLEMENTED
-- 41-output build definition: IMPLEMENTED
+- 44-output core build definition: IMPLEMENTED
 - LEGO family: GENERATED / NOT VALIDATED
 - GT interface: GENERATED / NOT VALIDATED
 - HAP core: GENERATED / NOT VALIDATED
@@ -176,6 +202,11 @@ Fit-critical interfaces remain provisional:
 - Recipe-driven per-donor mount transforms: IMPLEMENTED
 - Batch conversion + manifest + SHA256 evidence: IMPLEMENTED
 - Synthetic converter smoke gate: IMPLEMENTED
+- Native removable-connector strategy: IMPLEMENTED
+- Native connector 5-scale calibration family: IMPLEMENTED
+- Native connector → HAP core bridge family: IMPLEMENTED
+- Dependency-free STL geometry audit: IMPLEMENTED
+- Straight / Curve / S-Curve physical pilot: READY_TO_PRINT / NOT YET PHYSICALLY VALIDATED
 - Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
 - Snake donor: HOLD_LICENSE
 - Actual printed donor derivatives: NOT YET PHYSICALLY VALIDATED
