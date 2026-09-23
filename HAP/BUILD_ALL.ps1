@@ -40,7 +40,8 @@ function Build-Part(
   [double]$CoreClearance=0.30,
   [double]$OffsetX=0.0,
   [double]$OffsetY=0.0,
-  [double]$TileRotation=0.0
+  [double]$TileRotation=0.0,
+  [double]$TechnicHole=4.90
 ) {
   $dst = Join-Path $Out ($Name + ".stl")
   Write-Host "Building $Name ..." -ForegroundColor Cyan
@@ -54,6 +55,7 @@ function Build-Part(
     "-D", "OFFSET_X=$OffsetX",
     "-D", "OFFSET_Y=$OffsetY",
     "-D", "TILE_ROTATION=$TileRotation",
+    "-D", "TECHNIC_HOLE_D=$TechnicHole",
     $Cad
   )
 
@@ -101,12 +103,30 @@ Build-Part "HAP_BRIDGE_DUAL_CORE_8x4_S32_v0.1" "BRIDGE_DUAL_CORE_8x4" 1.000 29.7
 Build-Part "HAP_BRIDGE_DUAL_CORE_10x4_S40_v0.1" "BRIDGE_DUAL_CORE_10x4" 1.000 29.78 0.30
 Build-Part "HAP_BRIDGE_DUAL_GT_8x4_S32_v0.1" "BRIDGE_DUAL_GT_8x4" 1.000 29.78 0.30
 
+# HAP-008 Technic hole calibration + side-core supports
+Build-Part "CAL_TECHNIC_HOLE_4.80_v0.1" "TECHNIC_HOLE_COUPON_3" 1.000 29.78 0.30 0.0 0.0 0.0 4.80
+Build-Part "CAL_TECHNIC_HOLE_4.90_v0.1" "TECHNIC_HOLE_COUPON_3" 1.000 29.78 0.30 0.0 0.0 0.0 4.90
+Build-Part "CAL_TECHNIC_HOLE_5.00_v0.1" "TECHNIC_HOLE_COUPON_3" 1.000 29.78 0.30 0.0 0.0 0.0 5.00
+Build-Part "CAL_TECHNIC_HOLE_5.10_v0.1" "TECHNIC_HOLE_COUPON_3" 1.000 29.78 0.30 0.0 0.0 0.0 5.10
+Build-Part "HAP_TECHNIC_SIDE_CORE_3H_v0.1" "TECHNIC_SIDE_CORE_3H" 1.000 29.78 0.30 0.0 0.0 0.0 4.90
+Build-Part "HAP_TECHNIC_SIDE_CORE_5H_v0.1" "TECHNIC_SIDE_CORE_5H" 1.000 29.78 0.30 0.0 0.0 0.0 4.90
+
+# HAP-009 anti-twist/outrigger family
+Build-Part "HAP_DUAL_FOOT_CORE_S32_v0.1" "DUAL_FOOT_CORE_S32"
+Build-Part "HAP_DUAL_FOOT_CORE_S40_v0.1" "DUAL_FOOT_CORE_S40"
+Build-Part "HAP_CROSS_OUTRIGGER_CORE_S40_v0.1" "CROSS_OUTRIGGER_CORE_S40"
+
+# HAP-010 donor-conversion blanks
+Build-Part "HAP_DONOR_PAD_HEX_v0.1" "DONOR_PAD_HEX"
+Build-Part "HAP_DONOR_PAD_RECT_v0.1" "DONOR_PAD_RECT"
+Build-Part "HAP_DONOR_CORE_MOUNT_v0.1" "DONOR_CORE_MOUNT"
+
 $Count = (Get-ChildItem $Out -Filter "*.stl").Count
-if ($Count -ne 29) {
-  throw "Expected 29 STL outputs, found $Count"
+if ($Count -ne 41) {
+  throw "Expected 41 STL outputs, found $Count"
 }
 
-$Zip = Join-Path $Root "HAP_v0.1_SKY_BRIDGE_STRUCTURAL.zip"
+$Zip = Join-Path $Root "HAP_v0.1_TECHNIC_STABILITY_DONOR.zip"
 if (Test-Path $Zip) { Remove-Item $Zip -Force }
 
 $PackageItems = @(
@@ -115,6 +135,8 @@ $PackageItems = @(
   (Join-Path $Root "INTERFACE_SSOT_v0.1.md"),
   (Join-Path $Root "PHYSICAL_TEST_MATRIX_v0.1.md"),
   (Join-Path $Root "STRUCTURAL_TEST_MATRIX_v0.1.md"),
+  (Join-Path $Root "TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md"),
+  (Join-Path $Root "DONOR_CONVERSION_RULES_v0.1.md"),
   (Join-Path $Root "LICENSE.md"),
   (Join-Path $Root "cad\HAP_MASTER_v0.1.scad")
 )
