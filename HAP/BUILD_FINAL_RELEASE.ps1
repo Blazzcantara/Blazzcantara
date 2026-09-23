@@ -14,15 +14,15 @@ param(
   [Parameter(Mandatory=$true)]
   [string]$ShowReceiptJson,
 
-  [string]$OutputDir = ".\\HAP\\final_release_out"
+  [string]$OutputDir = ".\HAP\final_release_out"
 )
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Cad = Join-Path $Root "cad\\HAP_MASTER_v0.1.scad"
+$Cad = Join-Path $Root "cad\HAP_MASTER_v0.1.scad"
 $NativeBuilder = Join-Path $Root "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
 $FinalAudit = Join-Path $Root "FINAL_RELEASE_AUDIT.ps1"
-$RegistryPath = Join-Path $Root "donors\\DONOR_REGISTRY_v0.1.csv"
+$RegistryPath = Join-Path $Root "donors\DONOR_REGISTRY_v0.1.csv"
 
 foreach ($required in @(
   $ArchivePath,
@@ -81,8 +81,8 @@ $nativeScale = [double]$profile.selected.NATIVE_CONNECTOR.value
 $candidates = @(
   "openscad.com",
   "openscad.exe",
-  "C:\\Program Files\\OpenSCAD\\openscad.com",
-  "C:\\Program Files\\OpenSCAD\\openscad.exe"
+  "C:\Program Files\OpenSCAD\openscad.com",
+  "C:\Program Files\OpenSCAD\openscad.exe"
 )
 
 $OpenSCAD = $null
@@ -203,8 +203,8 @@ $nativeBridge = Join-Path $NativeTemp ("HAP_NATIVE_CORE_BRIDGE_scale_" + $scaleT
 if (-not (Test-Path $nativeConnector)) { throw "Selected native connector output missing." }
 if (-not (Test-Path $nativeBridge)) { throw "Selected native bridge output missing." }
 
-Copy-Item $nativeConnector (Join-Path $Release "03_NATIVE_CONNECTOR\\HAP_NATIVE_CONNECTOR_v1.0.0.stl")
-Copy-Item $nativeBridge (Join-Path $Release "03_NATIVE_CONNECTOR\\HAP_NATIVE_CORE_BRIDGE_v1.0.0.stl")
+Copy-Item $nativeConnector (Join-Path $Release "03_NATIVE_CONNECTOR\HAP_NATIVE_CONNECTOR_v1.0.0.stl")
+Copy-Item $nativeBridge (Join-Path $Release "03_NATIVE_CONNECTOR\HAP_NATIVE_CORE_BRIDGE_v1.0.0.stl")
 
 $registry = Import-Csv $RegistryPath
 $showIds = @(
@@ -227,12 +227,12 @@ try {
     if (-not $row) { throw "Missing donor registry row: $id" }
     if ($row.license_state -ne "CC_ATTRIBUTION") { throw "Donor is not redistribution-eligible: $id" }
 
-    $wanted = $row.source_path.Replace("\\","/")
-    $entry = $zip.Entries | Where-Object { $_.FullName.Replace("\\","/") -eq $wanted } | Select-Object -First 1
+    $wanted = $row.source_path.Replace("\","/")
+    $entry = $zip.Entries | Where-Object { $_.FullName.Replace("\","/") -eq $wanted } | Select-Object -First 1
     if (-not $entry) { throw "Donor source missing from archive: $wanted" }
 
     $safeFamily = ($row.family -replace '[^A-Za-z0-9_-]','_')
-    $dst = Join-Path $Release ("04_SHOW_MODULES\\" + $id + "_" + $safeFamily + ".stl")
+    $dst = Join-Path $Release ("04_SHOW_MODULES\" + $id + "_" + $safeFamily + ".stl")
     [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry,$dst,$true)
 
     $actual = (Get-FileHash -Algorithm SHA256 $dst).Hash.ToLowerInvariant()
@@ -252,7 +252,7 @@ try {
   if ($licenseEntry) {
     [System.IO.Compression.ZipFileExtensions]::ExtractToFile(
       $licenseEntry,
-      (Join-Path $Release "07_DOCUMENTATION\\DONOR_LICENSE_ORIGINAL.txt"),
+      (Join-Path $Release "07_DOCUMENTATION\DONOR_LICENSE_ORIGINAL.txt"),
       $true
     )
   }
@@ -260,7 +260,7 @@ try {
   if ($readmeEntry) {
     [System.IO.Compression.ZipFileExtensions]::ExtractToFile(
       $readmeEntry,
-      (Join-Path $Release "07_DOCUMENTATION\\DONOR_README_ORIGINAL.txt"),
+      (Join-Path $Release "07_DOCUMENTATION\DONOR_README_ORIGINAL.txt"),
       $true
     )
   }
@@ -269,26 +269,26 @@ finally {
   $zip.Dispose()
 }
 
-Copy-Item $PhysicalProfileJson (Join-Path $Release "06_EVIDENCE\\PHYSICAL_PROFILE_v0.1.json")
-Copy-Item $PilotReceiptJson (Join-Path $Release "06_EVIDENCE\\PILOT_PROMOTION_RECEIPT_v0.1.json")
-Copy-Item $StructuralReceiptJson (Join-Path $Release "06_EVIDENCE\\STRUCTURAL_SEAL_RECEIPT_v0.1.json")
-Copy-Item $ShowReceiptJson (Join-Path $Release "06_EVIDENCE\\SHOW_PROMOTION_RECEIPT_v0.1.json")
+Copy-Item $PhysicalProfileJson (Join-Path $Release "06_EVIDENCE\PHYSICAL_PROFILE_v0.1.json")
+Copy-Item $PilotReceiptJson (Join-Path $Release "06_EVIDENCE\PILOT_PROMOTION_RECEIPT_v0.1.json")
+Copy-Item $StructuralReceiptJson (Join-Path $Release "06_EVIDENCE\STRUCTURAL_SEAL_RECEIPT_v0.1.json")
+Copy-Item $ShowReceiptJson (Join-Path $Release "06_EVIDENCE\SHOW_PROMOTION_RECEIPT_v0.1.json")
 
 $docs = @(
   "README.md",
   "INTERFACE_SSOT_v0.1.md",
   "LICENSE.md",
   "DONOR_CONVERSION_RULES_v0.1.md",
-  "donors\\DONOR_ATTRIBUTION_v0.1.md",
-  "donors\\NATIVE_CONNECTOR_SSOT_v0.1.md",
-  "donors\\PILOT_SHOW_MODULES_v0.1.md"
+  "donors\DONOR_ATTRIBUTION_v0.1.md",
+  "donors\NATIVE_CONNECTOR_SSOT_v0.1.md",
+  "donors\PILOT_SHOW_MODULES_v0.1.md"
 )
 
 foreach ($doc in $docs) {
   $src = Join-Path $Root $doc
   if (Test-Path $src) {
     $name = [System.IO.Path]::GetFileName($src)
-    Copy-Item $src (Join-Path $Release ("07_DOCUMENTATION\\" + $name))
+    Copy-Item $src (Join-Path $Release ("07_DOCUMENTATION\" + $name))
   }
 }
 
@@ -319,7 +319,7 @@ STL layout:
 
 Expected final STL total: 38
 "@
-Set-Content -Encoding UTF8 -Path (Join-Path $Release "00_RELEASE\\README_FINAL.md") -Value $releaseReadme
+Set-Content -Encoding UTF8 -Path (Join-Path $Release "00_RELEASE\README_FINAL.md") -Value $releaseReadme
 
 $stls = @(Get-ChildItem $Release -Recurse -Filter "*.stl" -File | Sort-Object FullName)
 if ($stls.Count -ne 38) {
@@ -327,7 +327,7 @@ if ($stls.Count -ne 38) {
 }
 
 $manifest = foreach ($file in $stls) {
-  $relative = $file.FullName.Substring($Release.Length).TrimStart("\\","/")
+  $relative = $file.FullName.Substring($Release.Length).TrimStart([char[]]"\/")
   [pscustomobject]@{
     relative_path = $relative
     size_bytes = $file.Length
@@ -335,14 +335,14 @@ $manifest = foreach ($file in $stls) {
     reality_state = "PHYSICAL_RELEASE_CANDIDATE"
   }
 }
-$manifest | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $Release "00_RELEASE\\FINAL_MANIFEST.csv")
+$manifest | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $Release "00_RELEASE\FINAL_MANIFEST.csv")
 
-$shaPath = Join-Path $Release "00_RELEASE\\SHA256SUMS.txt"
+$shaPath = Join-Path $Release "00_RELEASE\SHA256SUMS.txt"
 $hashLines = Get-ChildItem $Release -Recurse -File |
   Where-Object { $_.FullName -ne $shaPath } |
   Sort-Object FullName |
   ForEach-Object {
-    $rel = $_.FullName.Substring($Release.Length).TrimStart("\\","/")
+    $rel = $_.FullName.Substring($Release.Length).TrimStart([char[]]"\/")
     $hash = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant()
     "$hash  $rel"
   }
@@ -357,10 +357,10 @@ $auditArgs = @(
 & powershell @auditArgs
 if ($LASTEXITCODE -ne 0) { throw "Final release audit failed." }
 
-$auditReceipt = Join-Path $Release "00_RELEASE\\FINAL_AUDIT_RECEIPT.json"
+$auditReceipt = Join-Path $Release "00_RELEASE\FINAL_AUDIT_RECEIPT.json"
 $auditHash = (Get-FileHash -Algorithm SHA256 $auditReceipt).Hash.ToLowerInvariant()
-$manifestHash = (Get-FileHash -Algorithm SHA256 (Join-Path $Release "00_RELEASE\\FINAL_MANIFEST.csv")).Hash.ToLowerInvariant()
-$profileReleaseHash = (Get-FileHash -Algorithm SHA256 (Join-Path $Release "06_EVIDENCE\\PHYSICAL_PROFILE_v0.1.json")).Hash.ToLowerInvariant()
+$manifestHash = (Get-FileHash -Algorithm SHA256 (Join-Path $Release "00_RELEASE\FINAL_MANIFEST.csv")).Hash.ToLowerInvariant()
+$profileReleaseHash = (Get-FileHash -Algorithm SHA256 (Join-Path $Release "06_EVIDENCE\PHYSICAL_PROFILE_v0.1.json")).Hash.ToLowerInvariant()
 
 $seal = @"
 HAP FINAL v1.0.0 RELEASE SEAL
@@ -371,7 +371,7 @@ Final manifest SHA256: $manifestHash
 Final audit receipt SHA256: $auditHash
 Final STL count: 38
 "@
-Set-Content -Encoding ASCII -Path (Join-Path $Release "00_RELEASE\\RELEASE_SEAL.txt") -Value $seal
+Set-Content -Encoding ASCII -Path (Join-Path $Release "00_RELEASE\RELEASE_SEAL.txt") -Value $seal
 
 $zipPath = Join-Path $OutputDir "HAP_FINAL_v1.0.0.zip"
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
