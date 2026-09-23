@@ -17,37 +17,64 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y openscad zip
 
-      - name: Build STLs
+      - name: Build HAP outputs
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p HAP/out
           CAD="HAP/cad/HAP_MASTER_v0.1.scad"
 
-          openscad -o HAP/out/CAL_LEGO_2x2_scale_0.996.stl -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=0.996' "$CAD"
-          openscad -o HAP/out/CAL_LEGO_2x2_scale_0.998.stl -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=0.998' "$CAD"
-          openscad -o HAP/out/CAL_LEGO_2x2_scale_1.000.stl -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=1.000' "$CAD"
-          openscad -o HAP/out/CAL_LEGO_2x2_scale_1.002.stl -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=1.002' "$CAD"
-          openscad -o HAP/out/CAL_LEGO_2x2_scale_1.004.stl -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=1.004' "$CAD"
+          build() {
+            local out="$1"
+            shift
+            openscad -o "HAP/out/$out.stl" "$@" "$CAD"
+            test -s "HAP/out/$out.stl"
+          }
 
-          openscad -o HAP/out/CAL_GT_male_29.60.stl -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.60' "$CAD"
-          openscad -o HAP/out/CAL_GT_male_29.70.stl -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.70' "$CAD"
-          openscad -o HAP/out/CAL_GT_male_29.78.stl -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.78' "$CAD"
-          openscad -o HAP/out/CAL_GT_male_29.86.stl -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.86' "$CAD"
-          openscad -o HAP/out/CAL_GT_male_29.96.stl -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.96' "$CAD"
+          build CAL_LEGO_2x2_scale_0.996 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=0.996'
+          build CAL_LEGO_2x2_scale_0.998 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=0.998'
+          build CAL_LEGO_2x2_scale_1.000 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=1.000'
+          build CAL_LEGO_2x2_scale_1.002 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=1.002'
+          build CAL_LEGO_2x2_scale_1.004 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=1.004'
 
-          openscad -o HAP/out/HAP_LG2x2_to_GT_nominal_v0.1.stl -D 'PART="LG2x2_GT"' -D 'LEGO_SCALE=1.000' -D 'GT_MALE_FLAT=29.78' "$CAD"
-          openscad -o HAP/out/HAP_LG4x4_to_GT_nominal_v0.1.stl -D 'PART="LG4x4_GT"' -D 'LEGO_SCALE=1.000' -D 'GT_MALE_FLAT=29.78' "$CAD"
+          build CAL_GT_male_29.60 -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.60'
+          build CAL_GT_male_29.70 -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.70'
+          build CAL_GT_male_29.78 -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.78'
+          build CAL_GT_male_29.86 -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.86'
+          build CAL_GT_male_29.96 -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.96'
 
-      - name: Validate outputs
+          build HAP_LG2x2_to_GT_nominal_v0.1 -D 'PART="LG2x2_GT"'
+          build HAP_LG4x4_to_GT_nominal_v0.1 -D 'PART="LG4x4_GT"'
+
+          build HAP_FULL_HEX_6x6_socket_0.20_v0.1 -D 'PART="FULL_HEX_6x6"' -D 'CORE_CLEARANCE=0.20'
+          build HAP_FULL_HEX_6x6_socket_0.30_v0.1 -D 'PART="FULL_HEX_6x6"' -D 'CORE_CLEARANCE=0.30'
+          build HAP_FULL_HEX_6x6_socket_0.40_v0.1 -D 'PART="FULL_HEX_6x6"' -D 'CORE_CLEARANCE=0.40'
+
+          build HAP_GT_CORE_nominal_v0.1 -D 'PART="GT_CORE"'
+          build HAP_GT_CORE_BLANK_v0.1 -D 'PART="GT_CORE_BLANK"'
+
+          build HAP_FULL_HEX_OFFSET_Xp4_v0.1 -D 'PART="FULL_HEX_OFFSET"' -D 'OFFSET_X=4.0'
+          build HAP_FULL_HEX_OFFSET_Xm4_v0.1 -D 'PART="FULL_HEX_OFFSET"' -D 'OFFSET_X=-4.0'
+          build HAP_FULL_HEX_OFFSET_Xp8_v0.1 -D 'PART="FULL_HEX_OFFSET"' -D 'OFFSET_X=8.0'
+          build HAP_FULL_HEX_OFFSET_Yp4_v0.1 -D 'PART="FULL_HEX_OFFSET"' -D 'OFFSET_Y=4.0'
+          build HAP_FULL_HEX_ROT30_v0.1 -D 'PART="FULL_HEX_OFFSET"' -D 'TILE_ROTATION=30.0'
+          build HAP_LG4x4_GT_DIRECT_OFFSET_Xp4_v0.1 -D 'PART="LG4x4_GT_OFFSET_DIRECT"' -D 'OFFSET_X=4.0'
+
+      - name: Validate output count
+        shell: bash
         run: |
-          test $(find HAP/out -name '*.stl' | wc -l) -eq 12
-          test -s HAP/out/HAP_LG2x2_to_GT_nominal_v0.1.stl
-          test -s HAP/out/HAP_LG4x4_to_GT_nominal_v0.1.stl
+          set -euo pipefail
+          COUNT=$(find HAP/out -maxdepth 1 -name '*.stl' | wc -l)
+          echo "STL count: $COUNT"
+          test "$COUNT" -eq 23
 
       - name: Package
+        shell: bash
         run: |
-          zip -r HAP_v0.1_CALIBRATION_AND_PROTOTYPES.zip HAP/out HAP/README.md HAP/LICENSE.md HAP/cad/HAP_MASTER_v0.1.scad HAP/BUILD_ALL.ps1
+          set -euo pipefail
+          zip -r HAP_v0.1_CALIBRATION_MODULAR_CORE.zip             HAP/out             HAP/README.md             HAP/INTERFACE_SSOT_v0.1.md             HAP/PHYSICAL_TEST_MATRIX_v0.1.md             HAP/LICENSE.md             HAP/cad/HAP_MASTER_v0.1.scad             HAP/BUILD_ALL.ps1
 
       - uses: actions/upload-artifact@v4
         with:
-          name: HAP-v0.1-calibration-and-prototypes
-          path: HAP_v0.1_CALIBRATION_AND_PROTOTYPES.zip
+          name: HAP-v0.1-calibration-modular-core
+          path: HAP_v0.1_CALIBRATION_MODULAR_CORE.zip
