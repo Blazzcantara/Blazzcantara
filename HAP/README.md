@@ -1,4 +1,4 @@
-# Hybrid Adapter Pack v0.1 — HAP-002..033
+# Hybrid Adapter Pack v0.1 — HAP-002..036
 
 ## Status
 
@@ -188,6 +188,30 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - runs final audit and creates RELEASE_SEAL.txt
 - only then creates HAP_FINAL_v1.0.0.zip and its SHA-256 sidecar
 
+
+
+### HAP-034 — Staged Physical Calibration Pack
+- 23 possible calibration STLs grouped into five numbered print stages
+- plate-plan CSV defines nominal-first and directional fallback order
+- Kobra S1 dimensional-calibration starting profile added
+- quick-start guide included in the generated calibration ZIP
+- all possible variants remain available, but printing all 23 is no longer the default workflow
+
+### HAP-035 — Adaptive Fit Recorder & Next-Test Advisor
+- guarded result recorder writes real/failed fit observations into the working CSV
+- PASS requires a real test, GOOD fit direction and a physical note
+- accidental multiple winners are blocked unless explicitly replaced
+- next-test advisor interprets TIGHT / LOOSE and chooses the nearest useful candidate
+- nominal-first strategy can reduce the physical campaign to roughly 6–12 prints when fits converge quickly
+
+### HAP-036 — One-Command Physical Campaign Runner
+- initializes the working physical-results CSV
+- optionally builds the staged calibration pack
+- prints the next recommended test for all five gates
+- reports current physical gate progress
+- when all five real winners exist, automatically seals the physical profile
+- then automatically creates the six-part physical pilot package
+
 ## Current automated build
 
 Expected core output: **47 STL files** plus synthetic donor/native-connector smoke outputs.
@@ -198,7 +222,7 @@ Windows:
 
 CI packages the complete result as:
 
-    HAP_v0.1_FINALIZATION_GATES.zip
+    HAP_v0.1_PHYSICAL_CAMPAIGN_UX.zip
 
 ## Interface SSOT
 
@@ -241,6 +265,8 @@ Fit-critical interfaces remain provisional:
 - donors/PILOT_SHOW_MODULES_v0.1.md
 - calibration/CALIBRATION_CAMPAIGN_v0.1.md
 - calibration/PHYSICAL_RESULTS_TEMPLATE_v0.1.csv
+- calibration/CALIBRATION_PLATE_PLAN_v0.1.csv
+- calibration/KOBRA_S1_CALIBRATION_PROFILE_v0.1.md
 - pilot/PILOT_RESULTS_TEMPLATE_v0.1.csv
 - structural/STRUCTURAL_RESULTS_TEMPLATE_v0.1.csv
 - show/SHOW_RESULTS_TEMPLATE_v0.1.csv
@@ -291,6 +317,10 @@ Fit-critical interfaces remain provisional:
 - Production-only final release consolidation: IMPLEMENTED
 - Fail-closed final audit: IMPLEMENTED
 - HAP FINAL v1.0.0 builder: IMPLEMENTED / BLOCKED UNTIL REAL PHYSICAL EVIDENCE
+- Five-stage calibration print pack: IMPLEMENTED
+- Adaptive physical result recorder: IMPLEMENTED
+- Tight/loose next-test advisor: IMPLEMENTED
+- One-command physical campaign runner: IMPLEMENTED
 - Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
 - Snake donor: HOLD_LICENSE
 - Actual printed donor derivatives: NOT YET PHYSICALLY VALIDATED
