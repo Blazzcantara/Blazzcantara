@@ -68,21 +68,36 @@ jobs:
           build HAP_BRIDGE_DUAL_CORE_10x4_S40_v0.1 -D 'PART="BRIDGE_DUAL_CORE_10x4"'
           build HAP_BRIDGE_DUAL_GT_8x4_S32_v0.1 -D 'PART="BRIDGE_DUAL_GT_8x4"'
 
+          build CAL_TECHNIC_HOLE_4.80_v0.1 -D 'PART="TECHNIC_HOLE_COUPON_3"' -D 'TECHNIC_HOLE_D=4.80'
+          build CAL_TECHNIC_HOLE_4.90_v0.1 -D 'PART="TECHNIC_HOLE_COUPON_3"' -D 'TECHNIC_HOLE_D=4.90'
+          build CAL_TECHNIC_HOLE_5.00_v0.1 -D 'PART="TECHNIC_HOLE_COUPON_3"' -D 'TECHNIC_HOLE_D=5.00'
+          build CAL_TECHNIC_HOLE_5.10_v0.1 -D 'PART="TECHNIC_HOLE_COUPON_3"' -D 'TECHNIC_HOLE_D=5.10'
+          build HAP_TECHNIC_SIDE_CORE_3H_v0.1 -D 'PART="TECHNIC_SIDE_CORE_3H"' -D 'TECHNIC_HOLE_D=4.90'
+          build HAP_TECHNIC_SIDE_CORE_5H_v0.1 -D 'PART="TECHNIC_SIDE_CORE_5H"' -D 'TECHNIC_HOLE_D=4.90'
+
+          build HAP_DUAL_FOOT_CORE_S32_v0.1 -D 'PART="DUAL_FOOT_CORE_S32"'
+          build HAP_DUAL_FOOT_CORE_S40_v0.1 -D 'PART="DUAL_FOOT_CORE_S40"'
+          build HAP_CROSS_OUTRIGGER_CORE_S40_v0.1 -D 'PART="CROSS_OUTRIGGER_CORE_S40"'
+
+          build HAP_DONOR_PAD_HEX_v0.1 -D 'PART="DONOR_PAD_HEX"'
+          build HAP_DONOR_PAD_RECT_v0.1 -D 'PART="DONOR_PAD_RECT"'
+          build HAP_DONOR_CORE_MOUNT_v0.1 -D 'PART="DONOR_CORE_MOUNT"'
+
       - name: Validate output count
         shell: bash
         run: |
           set -euo pipefail
           COUNT=$(find HAP/out -maxdepth 1 -name '*.stl' | wc -l)
           echo "STL count: $COUNT"
-          test "$COUNT" -eq 29
+          test "$COUNT" -eq 41
 
       - name: Package
         shell: bash
         run: |
           set -euo pipefail
-          zip -r HAP_v0.1_SKY_BRIDGE_STRUCTURAL.zip             HAP/out             HAP/README.md             HAP/INTERFACE_SSOT_v0.1.md             HAP/PHYSICAL_TEST_MATRIX_v0.1.md             HAP/STRUCTURAL_TEST_MATRIX_v0.1.md             HAP/LICENSE.md             HAP/cad/HAP_MASTER_v0.1.scad             HAP/BUILD_ALL.ps1
+          zip -r HAP_v0.1_TECHNIC_STABILITY_DONOR.zip             HAP/out             HAP/README.md             HAP/INTERFACE_SSOT_v0.1.md             HAP/PHYSICAL_TEST_MATRIX_v0.1.md             HAP/STRUCTURAL_TEST_MATRIX_v0.1.md             HAP/TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md             HAP/DONOR_CONVERSION_RULES_v0.1.md             HAP/LICENSE.md             HAP/cad/HAP_MASTER_v0.1.scad             HAP/BUILD_ALL.ps1
 
       - uses: actions/upload-artifact@v4
         with:
-          name: HAP-v0.1-sky-bridge-structural
-          path: HAP_v0.1_SKY_BRIDGE_STRUCTURAL.zip
+          name: HAP-v0.1-technic-stability-donor
+          path: HAP_v0.1_TECHNIC_STABILITY_DONOR.zip
