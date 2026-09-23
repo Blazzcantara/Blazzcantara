@@ -1,4 +1,4 @@
-# Hybrid Adapter Pack v0.1 — HAP-002..019
+# Hybrid Adapter Pack v0.1 — HAP-002..022
 
 ## Status
 
@@ -10,6 +10,7 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 
 ### HAP-002 — Calibration + direct supports
 - 5 LEGO clutch calibration variants
+- LEGO pitch now remains fixed; contact fit is tuned through LEGO_CLUTCH_DELTA
 - 5 GT male-interface calibration variants
 - 2×2 LEGO→GT direct support
 - 4×4 LEGO→GT direct support
@@ -123,9 +124,32 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - 10-run rolling regression gate defined before higher-dynamic show modules are promoted
 - fused-underbody conversion remains available as a fallback for donor families without a removable interface
 
+
+
+### HAP-020 — Physical Calibration Campaign
+- LEGO clutch calibration changed from whole-part XY scaling to fixed-pitch contact deltas
+- five clutch deltas: -0.08 / -0.04 / 0.00 / +0.04 / +0.08 mm
+- three compact HAP core socket coupons replace three full-size calibration platforms
+- one-command calibration pack builder creates 23 targeted print parts
+- physical results template and staged campaign guide added
+
+### HAP-021 — Physical Interface Profile Seal
+- fail-closed profile sealer requires exactly one PASS for each of five gates
+- every real winner must be marked tested_real=YES
+- physical-test note required for every real winner
+- selected values are emitted as a SHA-256-sealed JSON profile
+- CI fixture profiles are explicitly synthetic and cannot be used for printing
+
+### HAP-022 — Sealed-Value Physical Pilot Builder
+- accepts only a real physically selected interface profile
+- rebuilds production candidates with the selected LEGO / GT / core / Technic values
+- builds exactly one selected native connector -> HAP core bridge
+- outputs a six-STL pilot package for the Straight / Curve / S-Curve system test
+- synthetic CI profiles are rejected
+
 ## Current automated build
 
-Expected core output: **44 STL files** plus a 4-STL synthetic donor smoke-test set.
+Expected core output: **47 STL files** plus synthetic donor/native-connector smoke outputs.
 
 Windows:
 
@@ -133,31 +157,32 @@ Windows:
 
 CI packages the complete result as:
 
-    HAP_v0.1_NATIVE_CONNECTOR_PILOT.zip
+    HAP_v0.1_PHYSICAL_CALIBRATION_GATE.zip
 
 ## Interface SSOT
 
 See INTERFACE_SSOT_v0.1.md.
 
 Fit-critical interfaces remain provisional:
-- LEGO clutch scale
+- LEGO clutch contact delta (fixed 8.00 mm grid pitch)
 - GT male support width
 - HAP replaceable-core clearance
 - Technic pin-hole diameter
 
 ## Physical validation order
 
-1. LEGO clutch calibration.
-2. GT male calibration.
-3. HAP core clearance calibration.
-4. Technic hole calibration.
-5. Rebuild selected structural parts with sealed values.
-6. Static rigidity tests for Sky / Bridge / Outrigger supports.
-7. Print the five native connector calibration variants and select the best tile-slot fit.
-8. Print the matching native connector → HAP core bridge.
-9. Pilot the bridge on Straight, Large Curve and S-Curve.
-10. Only after the pilot passes promote Crossing, Spiral, Loop and Whoopy.
-11. Every functional module still receives a rolling regression test.
+1. Build the 23-part physical calibration pack.
+2. Select the best LEGO clutch contact delta.
+3. Select the best GT male width.
+4. Select the best compact HAP core socket clearance.
+5. Select the best Technic hole diameter.
+6. Select the best native removable-connector scale.
+7. Record exactly one real PASS per gate in the physical-results CSV.
+8. Seal the physical interface profile.
+9. Build the six-part sealed-value physical pilot package.
+10. Pilot the native bridge on Straight, Large Curve and S-Curve.
+11. Perform static rigidity checks on Sky / Bridge / Outrigger supports.
+12. Only after the pilot passes promote Crossing, Spiral, Loop and Whoopy.
 
 ## Documentation
 
@@ -173,6 +198,8 @@ Fit-critical interfaces remain provisional:
 - donors/DONOR_BATCH_QA_GUIDE_v0.1.md
 - donors/NATIVE_CONNECTOR_SSOT_v0.1.md
 - donors/PILOT_SHOW_MODULES_v0.1.md
+- calibration/CALIBRATION_CAMPAIGN_v0.1.md
+- calibration/PHYSICAL_RESULTS_TEMPLATE_v0.1.csv
 
 ## Architecture
 
@@ -207,6 +234,10 @@ Fit-critical interfaces remain provisional:
 - Native connector → HAP core bridge family: IMPLEMENTED
 - Dependency-free STL geometry audit: IMPLEMENTED
 - Straight / Curve / S-Curve physical pilot: READY_TO_PRINT / NOT YET PHYSICALLY VALIDATED
+- Fixed-pitch LEGO clutch calibration: IMPLEMENTED
+- 23-part physical calibration pack builder: IMPLEMENTED
+- Five-gate physical profile sealer: IMPLEMENTED
+- Six-part sealed-value pilot builder: IMPLEMENTED
 - Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
 - Snake donor: HOLD_LICENSE
 - Actual printed donor derivatives: NOT YET PHYSICALLY VALIDATED
