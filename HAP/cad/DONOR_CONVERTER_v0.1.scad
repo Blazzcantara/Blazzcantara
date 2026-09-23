@@ -21,6 +21,11 @@ DONOR_Y = is_undef(DONOR_Y) ? 0.0 : DONOR_Y;
 DONOR_Z = is_undef(DONOR_Z) ? 0.0 : DONOR_Z;
 DONOR_ROT = is_undef(DONOR_ROT) ? 0.0 : DONOR_ROT;
 
+MOUNT_X = is_undef(MOUNT_X) ? 0.0 : MOUNT_X;
+MOUNT_Y = is_undef(MOUNT_Y) ? 0.0 : MOUNT_Y;
+MOUNT_Z = is_undef(MOUNT_Z) ? 0.0 : MOUNT_Z;
+MOUNT_ROT = is_undef(MOUNT_ROT) ? 0.0 : MOUNT_ROT;
+
 module donor_mesh() {
     assert(DONOR_FILE != "", "DONOR_FILE must point to a local donor STL.");
 
@@ -29,7 +34,7 @@ module donor_mesh() {
             import(file=DONOR_FILE,convexity=20);
 }
 
-module donor_mount() {
+module donor_mount_shape() {
     if (MOUNT_STYLE == "HEX")
         donor_underbody_hex(58.40,2.40,0.20,false);
     else if (MOUNT_STYLE == "HEX_REINFORCED")
@@ -38,6 +43,12 @@ module donor_mount() {
         donor_underbody_rect(48.0,24.0,2.40,0.20);
     else
         assert(false,str("Unknown MOUNT_STYLE: ",MOUNT_STYLE));
+}
+
+module donor_mount() {
+    translate([MOUNT_X,MOUNT_Y,MOUNT_Z])
+        rotate([0,0,MOUNT_ROT])
+            donor_mount_shape();
 }
 
 if (MODE == "MOUNT_ONLY")
