@@ -2,7 +2,7 @@
 """Minimal STL integrity audit for HAP generated parts.
 
 No third-party Python packages required.
-Supports binary STL produced by OpenSCAD.
+Supports both binary and ASCII STL output.
 """
 
 from __future__ import annotations
@@ -15,18 +15,14 @@ from collections import defaultdict
 from pathlib import Path
 
 
-def read_binary_stl(path: Path):
-    data = path.read_bytes()
+def read_binary_stl_bytes(data: bytes):
     if len(data) < 84:
-        raise ValueError("STL is too short")
+        return None
 
     tri_count = struct.unpack_from("<I", data, 80)[0]
     expected = 84 + 50 * tri_count
     if expected != len(data):
-        raise ValueError(
-            f"Expected binary STL size {expected}, got {len(data)}; "
-            "ASCII STL is not supported by this audit."
-        )
+        return None
 
     triangles = []
     offset = 84
@@ -44,6 +40,55 @@ def read_binary_stl(path: Path):
         triangles.append((normal, vertices, attribute))
 
     return triangles
+
+
+def read_ascii_stl_bytes(data: bytes):
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError("STL is neither valid binary nor UTF-8 ASCII STL") from exc
+
+    triangles = []
+    current_normal = (0.0, 0.0, 0.0)
+    vertices = []
+
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+
+        parts = line.split()
+        if len(parts) == 5 and parts[0].lower() == "facet" and parts[1].lower() == "normal":
+            current_normal = tuple(float(v) for v in parts[2:5])
+        elif len(parts) == 4 and parts[0].lower() == "vertex":
+            vertices.append(tuple(float(v) for v in parts[1:4]))
+        elif parts[0].lower() == "endfacet":
+            if len(vertices) != 3:
+                raise ValueError(
+                    f"Malformed ASCII STL facet: expected 3 vertices, got {len(vertices)}"
+                )
+            triangles.append((current_normal, vertices, 0))
+            vertices = []
+            current_normal = (0.0, 0.0, 0.0)
+
+    if vertices:
+        raise ValueError("Malformed ASCII STL: unterminated facet")
+    if not triangles:
+        raise ValueError("No triangles found in ASCII STL")
+
+    return triangles
+
+
+def read_stl(path: Path):
+    data = path.read_bytes()
+    if len(data) < 16:
+        raise ValueError("STL is too short")
+
+    triangles = read_binary_stl_bytes(data)
+    if triangles is not None:
+        return triangles, "binary"
+
+    return read_ascii_stl_bytes(data), "ascii"
 
 
 def vkey(v, tolerance):
@@ -124,9 +169,10 @@ def main():
     parser.add_argument("--require-watertight", action="store_true")
     args = parser.parse_args()
 
-    triangles = read_binary_stl(args.stl)
+    triangles, stl_format = read_stl(args.stl)
     result = audit(triangles, args.tolerance)
     result["file"] = args.stl.name
+    result["stl_format"] = stl_format
 
     if args.json_out:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
