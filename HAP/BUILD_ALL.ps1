@@ -3,7 +3,11 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Cad = Join-Path $Root "cad\HAP_MASTER_v0.1.scad"
 $Out = Join-Path $Root "out"
+$SmokeOut = Join-Path $Root "smoke_out"
+$Converter = Join-Path $Root "cad\DONOR_CONVERTER_v0.1.scad"
+$SmokeFixture = Join-Path $Root "cad\DONOR_SMOKE_FIXTURE.scad"
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
+New-Item -ItemType Directory -Force -Path $SmokeOut | Out-Null
 
 $candidates = @(
   "openscad.com",
@@ -129,7 +133,50 @@ if ($Count -ne 44) {
   throw "Expected 44 STL outputs, found $Count"
 }
 
-$Zip = Join-Path $Root "HAP_v0.1_DONOR_PIPELINE.zip"
+# HAP-016 synthetic donor-converter smoke test
+$SyntheticDonor = Join-Path $SmokeOut "SYNTHETIC_DONOR.stl"
+& $OpenSCAD -o $SyntheticDonor $SmokeFixture
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $SyntheticDonor)) {
+  throw "Synthetic donor fixture build failed."
+}
+
+$SyntheticDonorSafe = (Resolve-Path $SyntheticDonor).Path.Replace("\","/")
+foreach ($Style in @("HEX","HEX_REINFORCED","RECT")) {
+  $SmokeFile = Join-Path $SmokeOut ("SMOKE_FUSED_" + $Style + ".stl")
+  $SmokeArgs = @(
+    "-o", $SmokeFile,
+    "-D", "DONOR_FILE=`"$SyntheticDonorSafe`"",
+    "-D", "MOUNT_STYLE=`"$Style`"",
+    "-D", "MODE=`"FUSED`"",
+    $Converter
+  )
+  & $OpenSCAD @SmokeArgs
+  if ($LASTEXITCODE -ne 0 -or -not (Test-Path $SmokeFile)) {
+    throw "Donor converter smoke test failed for $Style."
+  }
+  if ((Get-Item $SmokeFile).Length -le 100) {
+    throw "Donor converter smoke output is suspiciously small for $Style."
+  }
+}
+
+$SmokeCount = (Get-ChildItem $SmokeOut -Filter "*.stl").Count
+if ($SmokeCount -ne 4) {
+  throw "Expected 4 donor smoke STLs, found $SmokeCount"
+}
+
+$SmokeReport = Join-Path $Root "CI_DONOR_SMOKE_REPORT.txt"
+@"
+HAP Donor Converter Local Smoke Test
+====================================
+Synthetic donor: PASS
+HEX: PASS
+HEX_REINFORCED: PASS
+RECT: PASS
+Smoke STL count: $SmokeCount
+Reality state: CI_GEOMETRY_PASS_ONLY
+"@ | Set-Content -Encoding UTF8 -Path $SmokeReport
+
+$Zip = Join-Path $Root "HAP_v0.1_DONOR_BATCH_QA.zip"
 if (Test-Path $Zip) { Remove-Item $Zip -Force }
 
 $PackageItems = @(
@@ -141,11 +188,16 @@ $PackageItems = @(
   (Join-Path $Root "TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md"),
   (Join-Path $Root "DONOR_CONVERSION_RULES_v0.1.md"),
   (Join-Path $Root "BUILD_DONOR_CONVERSION.ps1"),
+  (Join-Path $Root "BUILD_DONOR_BATCH.ps1"),
+  (Join-Path $Root "CI_DONOR_SMOKE_REPORT.txt"),
   (Join-Path $Root "donors\DONOR_REGISTRY_v0.1.csv"),
+  (Join-Path $Root "donors\DONOR_RECIPES_v0.1.csv"),
   (Join-Path $Root "donors\DONOR_ATTRIBUTION_v0.1.md"),
   (Join-Path $Root "donors\DONOR_PIPELINE_v0.1.md"),
   (Join-Path $Root "donors\DONOR_TEST_MATRIX_v0.1.md"),
+  (Join-Path $Root "donors\DONOR_BATCH_QA_GUIDE_v0.1.md"),
   (Join-Path $Root "cad\DONOR_CONVERTER_v0.1.scad"),
+  (Join-Path $Root "cad\DONOR_SMOKE_FIXTURE.scad"),
   (Join-Path $Root "LICENSE.md"),
   (Join-Path $Root "cad\HAP_MASTER_v0.1.scad")
 )
