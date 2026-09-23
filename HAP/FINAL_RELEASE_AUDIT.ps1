@@ -100,6 +100,70 @@ foreach ($row in $manifest) {
 $shaPath = Join-Path $ReleaseDir "00_RELEASE\SHA256SUMS.txt"
 if (-not (Test-Path $shaPath)) { throw "SHA256SUMS.txt missing." }
 
+$sumLines = @(Get-Content $shaPath | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+if ($sumLines.Count -lt 38) {
+  throw "SHA256SUMS.txt contains too few entries: $($sumLines.Count)."
+}
+
+foreach ($line in $sumLines) {
+  if ($line -notmatch '^([0-9a-fA-F]{64})  (.+)
+  receipt_version = "1.0"
+  reality_state = "FINAL_AUDIT_PASS"
+  generated_utc = [DateTime]::UtcNow.ToString("o")
+  final_stl_count = $stls.Count
+  manifest_rows = $manifest.Count
+  sha256sum_entries = $sumLines.Count
+  evidence_linkage = "PASS"
+  evidence_states = [ordered]@{
+    physical_profile = $profile.reality_state
+    pilot = $pilot.reality_state
+    structural = $structural.reality_state
+    show_modules = $show.reality_state
+  }
+}
+
+$parent = Split-Path -Parent $OutputJson
+if ($parent) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
+
+$receipt | ConvertTo-Json -Depth 6 | Set-Content -Encoding UTF8 -Path $OutputJson
+
+Write-Host "PASS: final release audit" -ForegroundColor Green
+Write-Host "Final STLs: $($stls.Count)"
+Write-Host "Receipt: $OutputJson"
+) {
+    throw "Malformed SHA256SUMS line: $line"
+  }
+
+  $expectedHash = $Matches[1].ToLowerInvariant()
+  $relativePath = $Matches[2]
+  $fullPath = Join-Path $ReleaseDir $relativePath
+
+  if (-not (Test-Path $fullPath)) {
+    throw "SHA256SUMS references missing file: $relativePath"
+  }
+
+  $actualHash = (Get-FileHash -Algorithm SHA256 $fullPath).Hash.ToLowerInvariant()
+  if ($actualHash -ne $expectedHash) {
+    throw "SHA256SUMS mismatch: $relativePath"
+  }
+}
+
+$profileHash = (Get-FileHash -Algorithm SHA256 $profilePath).Hash.ToLowerInvariant()
+$pilotHash = (Get-FileHash -Algorithm SHA256 $pilotPath).Hash.ToLowerInvariant()
+
+if ($pilot.physical_profile_sha256 -ne $profileHash) {
+  throw "Pilot receipt linkage to physical profile is invalid."
+}
+if ($structural.physical_profile_sha256 -ne $profileHash) {
+  throw "Structural receipt linkage to physical profile is invalid."
+}
+if ($show.physical_profile_sha256 -ne $profileHash) {
+  throw "Show receipt linkage to physical profile is invalid."
+}
+if ($show.pilot_receipt_sha256 -ne $pilotHash) {
+  throw "Show receipt linkage to pilot receipt is invalid."
+}
+
 $receipt = [ordered]@{
   receipt_version = "1.0"
   reality_state = "FINAL_AUDIT_PASS"
