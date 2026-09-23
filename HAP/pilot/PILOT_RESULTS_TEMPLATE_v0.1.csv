@@ -1,0 +1,4 @@
+module_id,module_name,run_count,successful_runs,connector_fit,core_fit,lateral_rigidity,track_clearance,tested_real,result,notes
+SHOW-ST01,Straight,10,0,UNTESTED,UNTESTED,UNTESTED,UNTESTED,NO,UNTESTED,
+SHOW-CV01,Large Curve,10,0,UNTESTED,UNTESTED,UNTESTED,UNTESTED,NO,UNTESTED,
+SHOW-SC01,S-Curve,10,0,UNTESTED,UNTESTED,UNTESTED,UNTESTED,NO,UNTESTED,
