@@ -182,17 +182,19 @@ Build-FinalPart "05_FALLBACK_DONOR_MOUNTS" "HAP_DONOR_UNDERBODY_HEX_v1.0.0" "DON
 Build-FinalPart "05_FALLBACK_DONOR_MOUNTS" "HAP_DONOR_UNDERBODY_HEX_REINFORCED_v1.0.0" "DONOR_UNDERBODY_HEX_REINFORCED"
 Build-FinalPart "05_FALLBACK_DONOR_MOUNTS" "HAP_DONOR_UNDERBODY_RECT_v1.0.0" "DONOR_UNDERBODY_RECT"
 
-$nativeArgs = @(
-  "-NoProfile",
-  "-ExecutionPolicy", "Bypass",
-  "-File", $NativeBuilder,
-  "-ArchivePath", $ArchivePath,
-  "-OutputDir", $NativeTemp,
-  "-Scales", $nativeScale,
-  "-Modes", "CONNECTOR_ONLY","CORE_BRIDGE"
-)
-& powershell @nativeArgs
-if ($LASTEXITCODE -ne 0) { throw "Native final build failed." }
+foreach ($nativeMode in @("CONNECTOR_ONLY","CORE_BRIDGE")) {
+  $nativeArgs = @(
+    "-NoProfile",
+    "-ExecutionPolicy", "Bypass",
+    "-File", $NativeBuilder,
+    "-ArchivePath", $ArchivePath,
+    "-OutputDir", $NativeTemp,
+    "-Scales", $nativeScale,
+    "-Modes", $nativeMode
+  )
+  & powershell @nativeArgs
+  if ($LASTEXITCODE -ne 0) { throw "Native final build failed for $nativeMode." }
+}
 
 $scaleTag = $nativeScale.ToString("0.000",[System.Globalization.CultureInfo]::InvariantCulture)
 $nativeConnector = Join-Path $NativeTemp ("HAP_NATIVE_CONNECTOR_ONLY_scale_" + $scaleTag + "_v0.1.stl")
