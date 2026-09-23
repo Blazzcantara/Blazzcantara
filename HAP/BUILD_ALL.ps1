@@ -93,12 +93,20 @@ Build-Part "HAP_FULL_HEX_OFFSET_Yp4_v0.1" "FULL_HEX_OFFSET" 1.000 29.78 0.30 0.0
 Build-Part "HAP_FULL_HEX_ROT30_v0.1" "FULL_HEX_OFFSET" 1.000 29.78 0.30 0.0 0.0 30.0
 Build-Part "HAP_LG4x4_GT_DIRECT_OFFSET_Xp4_v0.1" "LG4x4_GT_OFFSET_DIRECT" 1.000 29.78 0.30 4.0 0.0 0.0
 
+Build-Part "HAP_SKY_CORE_2x4_v0.1" "SKY_CORE_2x4" 1.000 29.78 0.30
+Build-Part "HAP_SKY_CORE_4x4_v0.1" "SKY_CORE_4x4" 1.000 29.78 0.30
+Build-Part "HAP_SKY_CORE_4x6_v0.1" "SKY_CORE_4x6" 1.000 29.78 0.30
+
+Build-Part "HAP_BRIDGE_DUAL_CORE_8x4_S32_v0.1" "BRIDGE_DUAL_CORE_8x4" 1.000 29.78 0.30
+Build-Part "HAP_BRIDGE_DUAL_CORE_10x4_S40_v0.1" "BRIDGE_DUAL_CORE_10x4" 1.000 29.78 0.30
+Build-Part "HAP_BRIDGE_DUAL_GT_8x4_S32_v0.1" "BRIDGE_DUAL_GT_8x4" 1.000 29.78 0.30
+
 $Count = (Get-ChildItem $Out -Filter "*.stl").Count
-if ($Count -ne 23) {
-  throw "Expected 23 STL outputs, found $Count"
+if ($Count -ne 29) {
+  throw "Expected 29 STL outputs, found $Count"
 }
 
-$Zip = Join-Path $Root "HAP_v0.1_CALIBRATION_MODULAR_CORE.zip"
+$Zip = Join-Path $Root "HAP_v0.1_SKY_BRIDGE_STRUCTURAL.zip"
 if (Test-Path $Zip) { Remove-Item $Zip -Force }
 
 $PackageItems = @(
@@ -106,6 +114,7 @@ $PackageItems = @(
   (Join-Path $Root "README.md"),
   (Join-Path $Root "INTERFACE_SSOT_v0.1.md"),
   (Join-Path $Root "PHYSICAL_TEST_MATRIX_v0.1.md"),
+  (Join-Path $Root "STRUCTURAL_TEST_MATRIX_v0.1.md"),
   (Join-Path $Root "LICENSE.md"),
   (Join-Path $Root "cad\HAP_MASTER_v0.1.scad")
 )
