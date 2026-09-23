@@ -60,21 +60,29 @@ jobs:
           build HAP_FULL_HEX_ROT30_v0.1 -D 'PART="FULL_HEX_OFFSET"' -D 'TILE_ROTATION=30.0'
           build HAP_LG4x4_GT_DIRECT_OFFSET_Xp4_v0.1 -D 'PART="LG4x4_GT_OFFSET_DIRECT"' -D 'OFFSET_X=4.0'
 
+          build HAP_SKY_CORE_2x4_v0.1 -D 'PART="SKY_CORE_2x4"'
+          build HAP_SKY_CORE_4x4_v0.1 -D 'PART="SKY_CORE_4x4"'
+          build HAP_SKY_CORE_4x6_v0.1 -D 'PART="SKY_CORE_4x6"'
+
+          build HAP_BRIDGE_DUAL_CORE_8x4_S32_v0.1 -D 'PART="BRIDGE_DUAL_CORE_8x4"'
+          build HAP_BRIDGE_DUAL_CORE_10x4_S40_v0.1 -D 'PART="BRIDGE_DUAL_CORE_10x4"'
+          build HAP_BRIDGE_DUAL_GT_8x4_S32_v0.1 -D 'PART="BRIDGE_DUAL_GT_8x4"'
+
       - name: Validate output count
         shell: bash
         run: |
           set -euo pipefail
           COUNT=$(find HAP/out -maxdepth 1 -name '*.stl' | wc -l)
           echo "STL count: $COUNT"
-          test "$COUNT" -eq 23
+          test "$COUNT" -eq 29
 
       - name: Package
         shell: bash
         run: |
           set -euo pipefail
-          zip -r HAP_v0.1_CALIBRATION_MODULAR_CORE.zip             HAP/out             HAP/README.md             HAP/INTERFACE_SSOT_v0.1.md             HAP/PHYSICAL_TEST_MATRIX_v0.1.md             HAP/LICENSE.md             HAP/cad/HAP_MASTER_v0.1.scad             HAP/BUILD_ALL.ps1
+          zip -r HAP_v0.1_SKY_BRIDGE_STRUCTURAL.zip             HAP/out             HAP/README.md             HAP/INTERFACE_SSOT_v0.1.md             HAP/PHYSICAL_TEST_MATRIX_v0.1.md             HAP/STRUCTURAL_TEST_MATRIX_v0.1.md             HAP/LICENSE.md             HAP/cad/HAP_MASTER_v0.1.scad             HAP/BUILD_ALL.ps1
 
       - uses: actions/upload-artifact@v4
         with:
-          name: HAP-v0.1-calibration-modular-core
-          path: HAP_v0.1_CALIBRATION_MODULAR_CORE.zip
+          name: HAP-v0.1-sky-bridge-structural
+          path: HAP_v0.1_SKY_BRIDGE_STRUCTURAL.zip
