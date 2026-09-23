@@ -37,7 +37,7 @@ if ($rows.Count -ne $requiredIds.Count) {
 }
 
 $ids = @($rows | ForEach-Object { $_.module_id })
-if (@($ids | Sort-Object) -join "|" -ne @($requiredIds | Sort-Object) -join "|") {
+if ((@($ids | Sort-Object) -join "|") -ne (@($requiredIds | Sort-Object) -join "|")) {
   throw "Structural module IDs do not match the required gate set."
 }
 
