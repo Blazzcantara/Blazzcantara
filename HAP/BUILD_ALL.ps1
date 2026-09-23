@@ -120,13 +120,16 @@ Build-Part "HAP_CROSS_OUTRIGGER_CORE_S40_v0.1" "CROSS_OUTRIGGER_CORE_S40"
 Build-Part "HAP_DONOR_PAD_HEX_v0.1" "DONOR_PAD_HEX"
 Build-Part "HAP_DONOR_PAD_RECT_v0.1" "DONOR_PAD_RECT"
 Build-Part "HAP_DONOR_CORE_MOUNT_v0.1" "DONOR_CORE_MOUNT"
+Build-Part "HAP_DONOR_UNDERBODY_HEX_v0.1" "DONOR_UNDERBODY_HEX"
+Build-Part "HAP_DONOR_UNDERBODY_HEX_REINFORCED_v0.1" "DONOR_UNDERBODY_HEX_REINFORCED"
+Build-Part "HAP_DONOR_UNDERBODY_RECT_v0.1" "DONOR_UNDERBODY_RECT"
 
 $Count = (Get-ChildItem $Out -Filter "*.stl").Count
-if ($Count -ne 41) {
-  throw "Expected 41 STL outputs, found $Count"
+if ($Count -ne 44) {
+  throw "Expected 44 STL outputs, found $Count"
 }
 
-$Zip = Join-Path $Root "HAP_v0.1_TECHNIC_STABILITY_DONOR.zip"
+$Zip = Join-Path $Root "HAP_v0.1_DONOR_PIPELINE.zip"
 if (Test-Path $Zip) { Remove-Item $Zip -Force }
 
 $PackageItems = @(
@@ -137,6 +140,12 @@ $PackageItems = @(
   (Join-Path $Root "STRUCTURAL_TEST_MATRIX_v0.1.md"),
   (Join-Path $Root "TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md"),
   (Join-Path $Root "DONOR_CONVERSION_RULES_v0.1.md"),
+  (Join-Path $Root "BUILD_DONOR_CONVERSION.ps1"),
+  (Join-Path $Root "donors\DONOR_REGISTRY_v0.1.csv"),
+  (Join-Path $Root "donors\DONOR_ATTRIBUTION_v0.1.md"),
+  (Join-Path $Root "donors\DONOR_PIPELINE_v0.1.md"),
+  (Join-Path $Root "donors\DONOR_TEST_MATRIX_v0.1.md"),
+  (Join-Path $Root "cad\DONOR_CONVERTER_v0.1.scad"),
   (Join-Path $Root "LICENSE.md"),
   (Join-Path $Root "cad\HAP_MASTER_v0.1.scad")
 )
