@@ -31,11 +31,11 @@ jobs:
             test -s "HAP/out/$out.stl"
           }
 
-          build CAL_LEGO_2x2_scale_0.996 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=0.996'
-          build CAL_LEGO_2x2_scale_0.998 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=0.998'
-          build CAL_LEGO_2x2_scale_1.000 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=1.000'
-          build CAL_LEGO_2x2_scale_1.002 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=1.002'
-          build CAL_LEGO_2x2_scale_1.004 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_SCALE=1.004'
+          build CAL_LEGO_2x2_delta_m0.08 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_CLUTCH_DELTA=-0.08'
+          build CAL_LEGO_2x2_delta_m0.04 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_CLUTCH_DELTA=-0.04'
+          build CAL_LEGO_2x2_delta_0.00 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_CLUTCH_DELTA=0.00'
+          build CAL_LEGO_2x2_delta_p0.04 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_CLUTCH_DELTA=0.04'
+          build CAL_LEGO_2x2_delta_p0.08 -D 'PART="LEGO_CLUTCH_2x2"' -D 'LEGO_CLUTCH_DELTA=0.08'
 
           build CAL_GT_male_29.60 -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.60'
           build CAL_GT_male_29.70 -D 'PART="GT_MALE_TEST"' -D 'GT_MALE_FLAT=29.70'
@@ -52,6 +52,10 @@ jobs:
 
           build HAP_GT_CORE_nominal_v0.1 -D 'PART="GT_CORE"'
           build HAP_GT_CORE_BLANK_v0.1 -D 'PART="GT_CORE_BLANK"'
+
+          build CAL_CORE_SOCKET_0.20_v0.1 -D 'PART="CORE_SOCKET_COUPON"' -D 'CORE_CLEARANCE=0.20'
+          build CAL_CORE_SOCKET_0.30_v0.1 -D 'PART="CORE_SOCKET_COUPON"' -D 'CORE_CLEARANCE=0.30'
+          build CAL_CORE_SOCKET_0.40_v0.1 -D 'PART="CORE_SOCKET_COUPON"' -D 'CORE_CLEARANCE=0.40'
 
           build HAP_FULL_HEX_OFFSET_Xp4_v0.1 -D 'PART="FULL_HEX_OFFSET"' -D 'OFFSET_X=4.0'
           build HAP_FULL_HEX_OFFSET_Xm4_v0.1 -D 'PART="FULL_HEX_OFFSET"' -D 'OFFSET_X=-4.0'
@@ -92,7 +96,7 @@ jobs:
           set -euo pipefail
           COUNT=$(find HAP/out -maxdepth 1 -name '*.stl' | wc -l)
           echo "STL count: $COUNT"
-          test "$COUNT" -eq 44
+          test "$COUNT" -eq 47
 
       - name: Validate donor registry and recipes
         shell: bash
@@ -225,7 +229,10 @@ jobs:
             "HAP/BUILD_ALL.ps1",
             "HAP/BUILD_DONOR_CONVERSION.ps1",
             "HAP/BUILD_DONOR_BATCH.ps1",
-            "HAP/BUILD_NATIVE_CONNECTOR_PILOT.ps1"
+            "HAP/BUILD_NATIVE_CONNECTOR_PILOT.ps1",
+            "HAP/CREATE_CALIBRATION_PACK.ps1",
+            "HAP/SEAL_PHYSICAL_PROFILE.ps1",
+            "HAP/BUILD_PHYSICAL_PILOT.ps1"
           )
 
           foreach ($file in $files) {
@@ -247,13 +254,58 @@ jobs:
           if ($failed) { exit 1 }
           Write-Host "PowerShell syntax PASS" -ForegroundColor Green
 
+      - name: Validate calibration seal gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p HAP/ci_calibration
+
+          pwsh -NoProfile -File HAP/SEAL_PHYSICAL_PROFILE.ps1 \
+            -ResultsCsv HAP/calibration/CALIBRATION_RESULTS_CI_FIXTURE_v0.1.csv \
+            -OutputJson HAP/ci_calibration/CI_PROFILE.json \
+            -AllowSyntheticCiFixture
+
+          python3 - <<'PY'
+          import json, pathlib
+          p = pathlib.Path("HAP/ci_calibration/CI_PROFILE.json")
+          data = json.loads(p.read_text(encoding="utf-8-sig"))
+          assert data["reality_state"] == "SYNTHETIC_CI_ONLY_DO_NOT_USE_FOR_PRINTING"
+          assert set(data["selected"]) == {
+              "LEGO_CLUTCH",
+              "GT_MALE",
+              "CORE_CLEARANCE",
+              "TECHNIC_HOLE",
+              "NATIVE_CONNECTOR",
+          }
+          print("Synthetic profile generation PASS")
+          PY
+
+          if pwsh -NoProfile -File HAP/SEAL_PHYSICAL_PROFILE.ps1 \
+            -ResultsCsv HAP/calibration/PHYSICAL_RESULTS_TEMPLATE_v0.1.csv \
+            -OutputJson HAP/ci_calibration/SHOULD_NOT_EXIST.json; then
+            echo "ERROR: untouched physical-results template unexpectedly sealed"
+            exit 1
+          else
+            echo "Untested-template refusal PASS"
+          fi
+
+          if pwsh -NoProfile -File HAP/BUILD_PHYSICAL_PILOT.ps1 \
+            -ProfileJson HAP/ci_calibration/CI_PROFILE.json \
+            -ArchivePath HAP/calibration/CALIBRATION_RESULTS_CI_FIXTURE_v0.1.csv \
+            -OutputDir HAP/ci_calibration/pilot_should_not_build; then
+            echo "ERROR: physical pilot accepted synthetic profile"
+            exit 1
+          else
+            echo "Synthetic-profile pilot refusal PASS"
+          fi
+
       - name: Package
         shell: bash
         run: |
           set -euo pipefail
-          zip -r HAP_v0.1_NATIVE_CONNECTOR_PILOT.zip             HAP/out             HAP/README.md             HAP/INTERFACE_SSOT_v0.1.md             HAP/PHYSICAL_TEST_MATRIX_v0.1.md             HAP/STRUCTURAL_TEST_MATRIX_v0.1.md             HAP/TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md             HAP/DONOR_CONVERSION_RULES_v0.1.md             HAP/BUILD_DONOR_CONVERSION.ps1             HAP/BUILD_DONOR_BATCH.ps1             HAP/BUILD_NATIVE_CONNECTOR_PILOT.ps1             HAP/CI_DONOR_SMOKE_REPORT.txt             HAP/donors/DONOR_REGISTRY_v0.1.csv             HAP/donors/DONOR_RECIPES_v0.1.csv             HAP/donors/DONOR_ATTRIBUTION_v0.1.md             HAP/donors/DONOR_PIPELINE_v0.1.md             HAP/donors/DONOR_TEST_MATRIX_v0.1.md             HAP/donors/DONOR_BATCH_QA_GUIDE_v0.1.md             HAP/donors/NATIVE_CONNECTOR_SSOT_v0.1.md             HAP/donors/PILOT_SHOW_MODULES_v0.1.md             HAP/LICENSE.md             HAP/cad/HAP_MASTER_v0.1.scad             HAP/cad/DONOR_CONVERTER_v0.1.scad             HAP/cad/DONOR_SMOKE_FIXTURE.scad             HAP/cad/DONOR_NATIVE_CONNECTOR_v0.1.scad             HAP/tools/STL_COMPONENT_AUDIT.py             HAP/BUILD_ALL.ps1
+          zip -r HAP_v0.1_PHYSICAL_CALIBRATION_GATE.zip             HAP/out             HAP/README.md             HAP/INTERFACE_SSOT_v0.1.md             HAP/PHYSICAL_TEST_MATRIX_v0.1.md             HAP/STRUCTURAL_TEST_MATRIX_v0.1.md             HAP/TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md             HAP/DONOR_CONVERSION_RULES_v0.1.md             HAP/BUILD_DONOR_CONVERSION.ps1             HAP/BUILD_DONOR_BATCH.ps1             HAP/BUILD_NATIVE_CONNECTOR_PILOT.ps1             HAP/CREATE_CALIBRATION_PACK.ps1             HAP/SEAL_PHYSICAL_PROFILE.ps1             HAP/BUILD_PHYSICAL_PILOT.ps1             HAP/CI_DONOR_SMOKE_REPORT.txt             HAP/donors/DONOR_REGISTRY_v0.1.csv             HAP/donors/DONOR_RECIPES_v0.1.csv             HAP/donors/DONOR_ATTRIBUTION_v0.1.md             HAP/donors/DONOR_PIPELINE_v0.1.md             HAP/donors/DONOR_TEST_MATRIX_v0.1.md             HAP/donors/DONOR_BATCH_QA_GUIDE_v0.1.md             HAP/donors/NATIVE_CONNECTOR_SSOT_v0.1.md             HAP/donors/PILOT_SHOW_MODULES_v0.1.md             HAP/calibration/PHYSICAL_RESULTS_TEMPLATE_v0.1.csv             HAP/calibration/CALIBRATION_RESULTS_CI_FIXTURE_v0.1.csv             HAP/calibration/CALIBRATION_CAMPAIGN_v0.1.md             HAP/LICENSE.md             HAP/cad/HAP_MASTER_v0.1.scad             HAP/cad/DONOR_CONVERTER_v0.1.scad             HAP/cad/DONOR_SMOKE_FIXTURE.scad             HAP/cad/DONOR_NATIVE_CONNECTOR_v0.1.scad             HAP/tools/STL_COMPONENT_AUDIT.py             HAP/BUILD_ALL.ps1
 
       - uses: actions/upload-artifact@v4
         with:
-          name: HAP-v0.1-native-connector-pilot
-          path: HAP_v0.1_NATIVE_CONNECTOR_PILOT.zip
+          name: HAP-v0.1-physical-calibration-gate
+          path: HAP_v0.1_PHYSICAL_CALIBRATION_GATE.zip
