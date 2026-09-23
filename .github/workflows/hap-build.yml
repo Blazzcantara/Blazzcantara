@@ -232,7 +232,13 @@ jobs:
             "HAP/BUILD_NATIVE_CONNECTOR_PILOT.ps1",
             "HAP/CREATE_CALIBRATION_PACK.ps1",
             "HAP/SEAL_PHYSICAL_PROFILE.ps1",
-            "HAP/BUILD_PHYSICAL_PILOT.ps1"
+            "HAP/BUILD_PHYSICAL_PILOT.ps1",
+            "HAP/CHECK_PHYSICAL_PROGRESS.ps1",
+            "HAP/VALIDATE_PHYSICAL_PILOT.ps1",
+            "HAP/VALIDATE_STRUCTURAL_RESULTS.ps1",
+            "HAP/VALIDATE_SHOW_PROMOTION.ps1",
+            "HAP/FINAL_RELEASE_AUDIT.ps1",
+            "HAP/BUILD_FINAL_RELEASE.ps1"
           )
 
           foreach ($file in $files) {
@@ -299,13 +305,65 @@ jobs:
             echo "Synthetic-profile pilot refusal PASS"
           fi
 
+      - name: Validate finalization gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p HAP/ci_finalization
+
+          pwsh -NoProfile -File HAP/VALIDATE_PHYSICAL_PILOT.ps1 \
+            -ResultsCsv HAP/ci/PILOT_RESULTS_CI_FIXTURE_v0.1.csv \
+            -PhysicalProfileJson HAP/ci_calibration/CI_PROFILE.json \
+            -OutputJson HAP/ci_finalization/CI_PILOT_RECEIPT.json \
+            -AllowSyntheticCiFixture
+
+          pwsh -NoProfile -File HAP/VALIDATE_STRUCTURAL_RESULTS.ps1 \
+            -ResultsCsv HAP/ci/STRUCTURAL_RESULTS_CI_FIXTURE_v0.1.csv \
+            -PhysicalProfileJson HAP/ci_calibration/CI_PROFILE.json \
+            -OutputJson HAP/ci_finalization/CI_STRUCTURAL_RECEIPT.json \
+            -AllowSyntheticCiFixture
+
+          pwsh -NoProfile -File HAP/VALIDATE_SHOW_PROMOTION.ps1 \
+            -ResultsCsv HAP/ci/SHOW_RESULTS_CI_FIXTURE_v0.1.csv \
+            -PhysicalProfileJson HAP/ci_calibration/CI_PROFILE.json \
+            -PilotReceiptJson HAP/ci_finalization/CI_PILOT_RECEIPT.json \
+            -OutputJson HAP/ci_finalization/CI_SHOW_RECEIPT.json \
+            -AllowSyntheticCiFixture
+
+          python3 - <<'PY'
+          import json, pathlib
+          expected = {
+              "CI_PILOT_RECEIPT.json": "SYNTHETIC_CI_PILOT_PASS_DO_NOT_PROMOTE",
+              "CI_STRUCTURAL_RECEIPT.json": "SYNTHETIC_CI_STRUCTURAL_PASS_DO_NOT_PROMOTE",
+              "CI_SHOW_RECEIPT.json": "SYNTHETIC_CI_SHOW_PASS_DO_NOT_PROMOTE",
+          }
+          root = pathlib.Path("HAP/ci_finalization")
+          for name, state in expected.items():
+              data = json.loads((root / name).read_text(encoding="utf-8-sig"))
+              assert data["reality_state"] == state, (name, data["reality_state"])
+          print("Synthetic finalization receipt chain PASS")
+          PY
+
+          if pwsh -NoProfile -File HAP/BUILD_FINAL_RELEASE.ps1 \
+            -ArchivePath HAP/ci/PILOT_RESULTS_CI_FIXTURE_v0.1.csv \
+            -PhysicalProfileJson HAP/ci_calibration/CI_PROFILE.json \
+            -PilotReceiptJson HAP/ci_finalization/CI_PILOT_RECEIPT.json \
+            -StructuralReceiptJson HAP/ci_finalization/CI_STRUCTURAL_RECEIPT.json \
+            -ShowReceiptJson HAP/ci_finalization/CI_SHOW_RECEIPT.json \
+            -OutputDir HAP/ci_finalization/final_should_not_build; then
+            echo "ERROR: final release accepted synthetic evidence"
+            exit 1
+          else
+            echo "Synthetic final-release refusal PASS"
+          fi
+
       - name: Package
         shell: bash
         run: |
           set -euo pipefail
-          zip -r HAP_v0.1_PHYSICAL_CALIBRATION_GATE.zip             HAP/out             HAP/README.md             HAP/INTERFACE_SSOT_v0.1.md             HAP/PHYSICAL_TEST_MATRIX_v0.1.md             HAP/STRUCTURAL_TEST_MATRIX_v0.1.md             HAP/TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md             HAP/DONOR_CONVERSION_RULES_v0.1.md             HAP/BUILD_DONOR_CONVERSION.ps1             HAP/BUILD_DONOR_BATCH.ps1             HAP/BUILD_NATIVE_CONNECTOR_PILOT.ps1             HAP/CREATE_CALIBRATION_PACK.ps1             HAP/SEAL_PHYSICAL_PROFILE.ps1             HAP/BUILD_PHYSICAL_PILOT.ps1             HAP/CI_DONOR_SMOKE_REPORT.txt             HAP/donors/DONOR_REGISTRY_v0.1.csv             HAP/donors/DONOR_RECIPES_v0.1.csv             HAP/donors/DONOR_ATTRIBUTION_v0.1.md             HAP/donors/DONOR_PIPELINE_v0.1.md             HAP/donors/DONOR_TEST_MATRIX_v0.1.md             HAP/donors/DONOR_BATCH_QA_GUIDE_v0.1.md             HAP/donors/NATIVE_CONNECTOR_SSOT_v0.1.md             HAP/donors/PILOT_SHOW_MODULES_v0.1.md             HAP/calibration/PHYSICAL_RESULTS_TEMPLATE_v0.1.csv             HAP/calibration/CALIBRATION_RESULTS_CI_FIXTURE_v0.1.csv             HAP/calibration/CALIBRATION_CAMPAIGN_v0.1.md             HAP/LICENSE.md             HAP/cad/HAP_MASTER_v0.1.scad             HAP/cad/DONOR_CONVERTER_v0.1.scad             HAP/cad/DONOR_SMOKE_FIXTURE.scad             HAP/cad/DONOR_NATIVE_CONNECTOR_v0.1.scad             HAP/tools/STL_COMPONENT_AUDIT.py             HAP/BUILD_ALL.ps1
+          zip -r HAP_v0.1_FINALIZATION_GATES.zip             HAP/out             HAP/README.md             HAP/INTERFACE_SSOT_v0.1.md             HAP/PHYSICAL_TEST_MATRIX_v0.1.md             HAP/STRUCTURAL_TEST_MATRIX_v0.1.md             HAP/TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md             HAP/DONOR_CONVERSION_RULES_v0.1.md             HAP/BUILD_DONOR_CONVERSION.ps1             HAP/BUILD_DONOR_BATCH.ps1             HAP/BUILD_NATIVE_CONNECTOR_PILOT.ps1             HAP/CREATE_CALIBRATION_PACK.ps1             HAP/SEAL_PHYSICAL_PROFILE.ps1             HAP/BUILD_PHYSICAL_PILOT.ps1             HAP/CHECK_PHYSICAL_PROGRESS.ps1             HAP/VALIDATE_PHYSICAL_PILOT.ps1             HAP/VALIDATE_STRUCTURAL_RESULTS.ps1             HAP/VALIDATE_SHOW_PROMOTION.ps1             HAP/FINAL_RELEASE_AUDIT.ps1             HAP/BUILD_FINAL_RELEASE.ps1             HAP/FINALIZATION_GUIDE_v1.0.md             HAP/FINAL_RELEASE_GATE_MATRIX_v1.0.md             HAP/CI_DONOR_SMOKE_REPORT.txt             HAP/donors/DONOR_REGISTRY_v0.1.csv             HAP/donors/DONOR_RECIPES_v0.1.csv             HAP/donors/DONOR_ATTRIBUTION_v0.1.md             HAP/donors/DONOR_PIPELINE_v0.1.md             HAP/donors/DONOR_TEST_MATRIX_v0.1.md             HAP/donors/DONOR_BATCH_QA_GUIDE_v0.1.md             HAP/donors/NATIVE_CONNECTOR_SSOT_v0.1.md             HAP/donors/PILOT_SHOW_MODULES_v0.1.md             HAP/calibration/PHYSICAL_RESULTS_TEMPLATE_v0.1.csv             HAP/calibration/CALIBRATION_RESULTS_CI_FIXTURE_v0.1.csv             HAP/calibration/CALIBRATION_CAMPAIGN_v0.1.md             HAP/pilot/PILOT_RESULTS_TEMPLATE_v0.1.csv             HAP/structural/STRUCTURAL_RESULTS_TEMPLATE_v0.1.csv             HAP/show/SHOW_RESULTS_TEMPLATE_v0.1.csv             HAP/ci/PILOT_RESULTS_CI_FIXTURE_v0.1.csv             HAP/ci/STRUCTURAL_RESULTS_CI_FIXTURE_v0.1.csv             HAP/ci/SHOW_RESULTS_CI_FIXTURE_v0.1.csv             HAP/LICENSE.md             HAP/cad/HAP_MASTER_v0.1.scad             HAP/cad/DONOR_CONVERTER_v0.1.scad             HAP/cad/DONOR_SMOKE_FIXTURE.scad             HAP/cad/DONOR_NATIVE_CONNECTOR_v0.1.scad             HAP/tools/STL_COMPONENT_AUDIT.py             HAP/BUILD_ALL.ps1
 
       - uses: actions/upload-artifact@v4
         with:
-          name: HAP-v0.1-physical-calibration-gate
-          path: HAP_v0.1_PHYSICAL_CALIBRATION_GATE.zip
+          name: HAP-v0.1-finalization-gates
+          path: HAP_v0.1_FINALIZATION_GATES.zip
