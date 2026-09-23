@@ -1,0 +1,6 @@
+module_id,module_name,run_count,successful_runs,connector_fit,core_fit,lateral_rigidity,track_clearance,tested_real,result,notes
+SHOW-X01,Crossing,10,10,PASS,PASS,PASS,PASS,NO,PASS,CI fixture
+SHOW-SP01,Spiral-to-Fall,10,10,PASS,PASS,PASS,PASS,NO,PASS,CI fixture
+SHOW-LP01,Loop,10,10,PASS,PASS,PASS,PASS,NO,PASS,CI fixture
+SHOW-WP01,Whoopy Jump,10,10,PASS,PASS,PASS,PASS,NO,PASS,CI fixture
+SHOW-SOL01,Solenoid S-Curve,10,10,PASS,PASS,PASS,PASS,NO,PASS,CI fixture
