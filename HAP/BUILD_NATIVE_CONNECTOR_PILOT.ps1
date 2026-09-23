@@ -2,7 +2,12 @@ param(
   [Parameter(Mandatory=$true)]
   [string]$ArchivePath,
 
-  [string]$OutputDir = ".\HAP\native_connector_out"
+  [string]$OutputDir = ".\HAP\native_connector_out",
+
+  [double[]]$Scales = @(0.996,0.998,1.000,1.002,1.004),
+
+  [ValidateSet("CONNECTOR_ONLY","CORE_BRIDGE")]
+  [string[]]$Modes = @("CONNECTOR_ONLY","CORE_BRIDGE")
 )
 
 $ErrorActionPreference = "Stop"
@@ -76,13 +81,12 @@ try {
   }
 
   $sourceSafe = (Resolve-Path $sourceFile).Path.Replace("\","/")
-  $scales = @(0.996,0.998,1.000,1.002,1.004)
   $manifest = @()
 
-  foreach ($scale in $scales) {
+  foreach ($scale in $Scales) {
     $scaleTag = $scale.ToString("0.000",[System.Globalization.CultureInfo]::InvariantCulture)
 
-    foreach ($mode in @("CONNECTOR_ONLY","CORE_BRIDGE")) {
+    foreach ($mode in $Modes) {
       $name = "HAP_NATIVE_${mode}_scale_${scaleTag}_v0.1"
       $dst = Join-Path $OutputDir ($name + ".stl")
       $auditJson = Join-Path $OutputDir ($name + "_GEOMETRY.json")
@@ -173,7 +177,7 @@ Reality state: GENERATED / NOT PHYSICALLY VALIDATED
 
   Write-Host ""
   Write-Host "PASS: native connector pilot generated" -ForegroundColor Green
-  Write-Host "STLs  : 10"
+  Write-Host "STLs  : $($manifest.Count)"
   Write-Host "ZIP   : $zipOut"
   Write-Host "Gate  : physical connector fit still required" -ForegroundColor Yellow
 }

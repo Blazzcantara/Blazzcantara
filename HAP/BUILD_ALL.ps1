@@ -45,7 +45,8 @@ function Build-Part(
   [double]$OffsetX=0.0,
   [double]$OffsetY=0.0,
   [double]$TileRotation=0.0,
-  [double]$TechnicHole=4.90
+  [double]$TechnicHole=4.90,
+  [double]$LegoClutchDelta=0.00
 ) {
   $dst = Join-Path $Out ($Name + ".stl")
   Write-Host "Building $Name ..." -ForegroundColor Cyan
@@ -60,6 +61,7 @@ function Build-Part(
     "-D", "OFFSET_Y=$OffsetY",
     "-D", "TILE_ROTATION=$TileRotation",
     "-D", "TECHNIC_HOLE_D=$TechnicHole",
+    "-D", "LEGO_CLUTCH_DELTA=$LegoClutchDelta",
     $Cad
   )
 
@@ -70,11 +72,11 @@ function Build-Part(
   if ((Get-Item $dst).Length -le 100) { throw "Suspiciously small STL: $dst" }
 }
 
-Build-Part "CAL_LEGO_2x2_scale_0.996" "LEGO_CLUTCH_2x2" 0.996
-Build-Part "CAL_LEGO_2x2_scale_0.998" "LEGO_CLUTCH_2x2" 0.998
-Build-Part "CAL_LEGO_2x2_scale_1.000" "LEGO_CLUTCH_2x2" 1.000
-Build-Part "CAL_LEGO_2x2_scale_1.002" "LEGO_CLUTCH_2x2" 1.002
-Build-Part "CAL_LEGO_2x2_scale_1.004" "LEGO_CLUTCH_2x2" 1.004
+Build-Part "CAL_LEGO_2x2_delta_m0.08" "LEGO_CLUTCH_2x2" -LegoClutchDelta -0.08
+Build-Part "CAL_LEGO_2x2_delta_m0.04" "LEGO_CLUTCH_2x2" -LegoClutchDelta -0.04
+Build-Part "CAL_LEGO_2x2_delta_0.00" "LEGO_CLUTCH_2x2" -LegoClutchDelta 0.00
+Build-Part "CAL_LEGO_2x2_delta_p0.04" "LEGO_CLUTCH_2x2" -LegoClutchDelta 0.04
+Build-Part "CAL_LEGO_2x2_delta_p0.08" "LEGO_CLUTCH_2x2" -LegoClutchDelta 0.08
 
 Build-Part "CAL_GT_male_29.60" "GT_MALE_TEST" 1.000 29.60
 Build-Part "CAL_GT_male_29.70" "GT_MALE_TEST" 1.000 29.70
@@ -91,6 +93,10 @@ Build-Part "HAP_FULL_HEX_6x6_socket_0.40_v0.1" "FULL_HEX_6x6" 1.000 29.78 0.40
 
 Build-Part "HAP_GT_CORE_nominal_v0.1" "GT_CORE"
 Build-Part "HAP_GT_CORE_BLANK_v0.1" "GT_CORE_BLANK"
+
+Build-Part "CAL_CORE_SOCKET_0.20_v0.1" "CORE_SOCKET_COUPON" 1.000 29.78 0.20
+Build-Part "CAL_CORE_SOCKET_0.30_v0.1" "CORE_SOCKET_COUPON" 1.000 29.78 0.30
+Build-Part "CAL_CORE_SOCKET_0.40_v0.1" "CORE_SOCKET_COUPON" 1.000 29.78 0.40
 
 Build-Part "HAP_FULL_HEX_OFFSET_Xp4_v0.1" "FULL_HEX_OFFSET" 1.000 29.78 0.30 4.0 0.0 0.0
 Build-Part "HAP_FULL_HEX_OFFSET_Xm4_v0.1" "FULL_HEX_OFFSET" 1.000 29.78 0.30 -4.0 0.0 0.0
@@ -129,8 +135,8 @@ Build-Part "HAP_DONOR_UNDERBODY_HEX_REINFORCED_v0.1" "DONOR_UNDERBODY_HEX_REINFO
 Build-Part "HAP_DONOR_UNDERBODY_RECT_v0.1" "DONOR_UNDERBODY_RECT"
 
 $Count = (Get-ChildItem $Out -Filter "*.stl").Count
-if ($Count -ne 44) {
-  throw "Expected 44 STL outputs, found $Count"
+if ($Count -ne 47) {
+  throw "Expected 47 STL outputs, found $Count"
 }
 
 # HAP-016 synthetic donor-converter smoke test
