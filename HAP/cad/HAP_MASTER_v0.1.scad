@@ -1,5 +1,5 @@
 /*
-Hybrid Adapter Pack v0.1 — HAP-002..005 Parametric Master
+Hybrid Adapter Pack v0.1 — HAP-002..013 Parametric Master
 Original parametric compatibility geometry.
 GENERATED != PHYSICALLY VALIDATED.
 
@@ -619,12 +619,50 @@ module donor_pad_rect(
 module donor_core_mount(
     pad_flat=42.0,
     pad_h=2.40,
-    male_flat=29.78
+    overlap=0.20
+) {
+    // Core body points downward into an existing HAP carrier socket.
+    // Attachment pad sits above it and may overlap the donor underside slightly.
+    union() {
+        translate([0,0,-core_h-pad_h+overlap])
+            hex_prism(core_nominal_flat,core_h,0,0);
+
+        translate([0,0,-pad_h+overlap])
+            hex_prism(pad_flat,pad_h,0,0);
+    }
+}
+
+module donor_underbody_hex(
+    pad_flat=58.40,
+    pad_h=2.40,
+    overlap=0.20,
+    reinforced=false
 ) {
     union() {
-        hex_prism(core_nominal_flat,core_h,0,0);
-        hex_prism(pad_flat,pad_h,core_h,0);
-        gt_male_ring(male_flat,core_h+pad_h);
+        donor_core_mount(
+            reinforced ? pad_flat : min(pad_flat,46.0),
+            pad_h,
+            overlap
+        );
+
+        if (reinforced)
+            translate([0,0,-pad_h+overlap])
+                hex_ring(pad_flat,4.0,pad_h,0,0);
+    }
+}
+
+module donor_underbody_rect(
+    w=48.0,
+    d=24.0,
+    pad_h=2.40,
+    overlap=0.20
+) {
+    union() {
+        translate([0,0,-core_h-pad_h+overlap])
+            hex_prism(core_nominal_flat,core_h,0,0);
+
+        translate([0,0,-pad_h+overlap])
+            centered_cube_xy(w,d,pad_h,0);
     }
 }
 
@@ -723,7 +761,16 @@ else if (PART == "DONOR_PAD_RECT")
     donor_pad_rect(48.0,24.0,2.40,CORE_CLEARANCE);
 
 else if (PART == "DONOR_CORE_MOUNT")
-    donor_core_mount(42.0,2.40,GT_MALE_FLAT);
+    donor_core_mount(42.0,2.40,0.20);
+
+else if (PART == "DONOR_UNDERBODY_HEX")
+    donor_underbody_hex(58.40,2.40,0.20,false);
+
+else if (PART == "DONOR_UNDERBODY_HEX_REINFORCED")
+    donor_underbody_hex(58.40,2.40,0.20,true);
+
+else if (PART == "DONOR_UNDERBODY_RECT")
+    donor_underbody_rect(48.0,24.0,2.40,0.20);
 
 else
     assert(false,str("Unknown PART: ",PART));
