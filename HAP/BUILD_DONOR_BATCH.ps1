@@ -135,8 +135,9 @@ foreach ($item in ($ready | Sort-Object { [int]$_.recipe.rolling_test_order })) 
   $stl = Join-Path $OutputDir ("HAP_CONVERTED_" + $id + "_v0.1.stl")
   $receipt = Join-Path $OutputDir ("HAP_CONVERTED_" + $id + "_v0.1_ATTRIBUTION.txt")
   $evidence = Join-Path $OutputDir ("HAP_CONVERTED_" + $id + "_v0.1_EVIDENCE.json")
+  $geometry = Join-Path $OutputDir ("HAP_CONVERTED_" + $id + "_v0.1_GEOMETRY.json")
 
-  foreach ($required in @($stl,$receipt,$evidence)) {
+  foreach ($required in @($stl,$receipt,$evidence,$geometry)) {
     if (-not (Test-Path $required)) { throw "Required batch output missing: $required" }
   }
 
@@ -147,6 +148,7 @@ foreach ($item in ($ready | Sort-Object { [int]$_.recipe.rolling_test_order })) 
     output_size_bytes = (Get-Item $stl).Length
     attribution_file = (Split-Path -Leaf $receipt)
     evidence_file = (Split-Path -Leaf $evidence)
+    geometry_file = (Split-Path -Leaf $geometry)
     mount_style = $item.recipe.mount_style
     risk_class = $item.recipe.risk_class
     rolling_test_order = [int]$item.recipe.rolling_test_order
@@ -187,6 +189,7 @@ All items passed:
 - output existence check
 - attribution receipt generation
 - per-item evidence generation
+- per-item STL geometry audit
 - output SHA-256 manifest generation
 
 Physical fit and rolling regression remain mandatory.
