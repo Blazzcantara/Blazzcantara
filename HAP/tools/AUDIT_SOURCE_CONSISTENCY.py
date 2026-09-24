@@ -78,6 +78,17 @@ for label, (actual, expected) in checks.items():
     if abs(actual - expected) > 1e-9:
         fail(f"SSOT drift: {label}: {actual} != {expected}")
 
+if not re.search(
+    r"hex_prism\(hap_core_flat\s*,\s*hap_core_h\s*,\s*0\s*,\s*0\s*\)",
+    native,
+):
+    fail("native bridge core orientation drift: expected HAP socket orientation rot=0")
+
+if abs(number(cad, "lego_pitch") - 8.0) > 1e-9:
+    fail("LEGO grid pitch drift: expected 8.00 mm")
+if "scale([xy_scale,xy_scale,1])" in cad.replace(" ", ""):
+    fail("legacy whole-part LEGO XY scaling has re-entered production geometry")
+
 # 2 — Master selectors / local builder / CI builder parity.
 selectors = re.findall(r'PART\s*==\s*"([^"]+)"', cad)
 if len(selectors) != len(set(selectors)):
