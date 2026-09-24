@@ -6,6 +6,17 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+$PowerShellExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+  (Get-Command pwsh).Source
+}
+elseif (Get-Command powershell -ErrorAction SilentlyContinue) {
+  (Get-Command powershell).Source
+}
+else {
+  throw "PowerShell executable not found."
+}
+
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $BuildAll = Join-Path $Root "BUILD_ALL.ps1"
 $NativeBuilder = Join-Path $Root "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
@@ -22,6 +33,7 @@ if (Test-Path $Stage) { Remove-Item $Stage -Recurse -Force }
 if (Test-Path $NativeOut) { Remove-Item $NativeOut -Recurse -Force }
 
 New-Item -ItemType Directory -Force -Path $Stage | Out-Null
+$StageResolved = (Resolve-Path $Stage).Path
 
 foreach ($dir in @(
   "01_LEGO",
@@ -33,7 +45,7 @@ foreach ($dir in @(
   New-Item -ItemType Directory -Force -Path (Join-Path $Stage $dir) | Out-Null
 }
 
-& powershell -NoProfile -ExecutionPolicy Bypass -File $BuildAll
+& $PowerShellExe -NoProfile -ExecutionPolicy Bypass -File $BuildAll
 if ($LASTEXITCODE -ne 0) { throw "Base HAP build failed." }
 
 $nativeArgs = @(
@@ -44,7 +56,7 @@ $nativeArgs = @(
   "-OutputDir", $NativeOut,
   "-Modes", "CONNECTOR_ONLY"
 )
-& powershell @nativeArgs
+& $PowerShellExe @nativeArgs
 if ($LASTEXITCODE -ne 0) { throw "Native connector calibration build failed." }
 
 $copyPlan = @(
@@ -85,7 +97,7 @@ if ($stls.Count -ne 23) {
 }
 
 $manifest = foreach ($file in ($stls | Sort-Object FullName)) {
-  $relative = $file.FullName.Substring($Stage.Length).TrimStart([char[]]"\/")
+  $relative = $file.FullName.Substring($StageResolved.Length).TrimStart([char[]]"\/")
 
   $category = if ($file.Name -like "CAL_LEGO*") {
     "LEGO_CLUTCH"
