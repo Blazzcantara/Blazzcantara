@@ -527,11 +527,19 @@ if (-not (Test-Path $verifySums)) {
   throw "Round-trip verification failed: SHA256SUMS_FINAL.txt missing."
 }
 
+$checksumPattern = "^[0-9a-fA-F]{64}  .+$"
 foreach ($line in (Get-Content $verifySums | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
-  if ($line -notmatch '^([0-9a-fA-F]{64})  (.+)
+  if ($line -notmatch $checksumPattern) {
+    throw "Round-trip verification found malformed checksum line: $line"
+  }
 
-  $expected = $Matches[1].ToLowerInvariant()
-  $relative = $Matches[2]
+  $parts = $line -split "  ", 2
+  if ($parts.Count -ne 2) {
+    throw "Round-trip verification could not split checksum line: $line"
+  }
+
+  $expected = $parts[0].ToLowerInvariant()
+  $relative = $parts[1]
   $file = Join-Path $verifyDir $relative
   if (-not (Test-Path $file)) {
     throw "Round-trip verification missing file: $relative"
