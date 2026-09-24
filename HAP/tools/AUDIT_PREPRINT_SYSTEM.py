@@ -68,6 +68,8 @@ def audit_geometry_json(path:Path,label:str):
     if data.get("positive_shells")!=1: raise AssertionError(f"{label}: positive_shells != 1")
     if data.get("watertight_edge_test") is not True: raise AssertionError(f"{label}: not watertight")
     if int(data.get("degenerate_triangle_count",-1))!=0: raise AssertionError(f"{label}: degenerate triangles present")
+    if int(data.get("near_zero_shells",-1))!=0: raise AssertionError(f"{label}: near-zero-volume shell present")
+    if float(data.get("net_signed_volume_mm3",0.0))<=0.0: raise AssertionError(f"{label}: non-positive net solid volume")
     return data
 
 def main():
@@ -252,7 +254,7 @@ def main():
         "hap_nominal_stl_count":26,
         "lego_structural_stl_count":25,
         "native_real_stl_count_not_in_public_package":2,
-        "mesh_gate":{"positive_shells_exactly_one":True,"watertight":True,"zero_degenerate_triangles":True,"unique_sha256_payloads":True},
+        "mesh_gate":{"positive_shells_exactly_one":True,"watertight":True,"zero_degenerate_triangles":True,"zero_near_zero_shells":True,"positive_net_volume":True,"unique_sha256_payloads":True},
         "interface_parity":interface_actual,
         "lego_stud_d_mm":stud_d,"lego_stud_h_mm":stud_h,
         "structural_printability_guard":{
