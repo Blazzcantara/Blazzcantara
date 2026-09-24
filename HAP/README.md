@@ -1,4 +1,4 @@
-# Hybrid Adapter Pack v0.2 — HAP-002..043
+# Hybrid Adapter Pack v0.2 — HAP-002..046
 
 ## Status
 
@@ -266,6 +266,26 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - verifies the full 25-part pack and 12-part starter pack
 - publishes HAP-lego-structural-pack-v0.1 as its own workflow artifact
 
+
+
+### HAP-044 — Complete Direct-Print Kit Builder
+- combines 26 non-Technic HAP adapter/carrier/donor-mount STL files with the 25-part LEGO structural underbuild
+- repository/CI mode produces an explicit 51-STL no-native package
+- private mode accepts the user's native connector ZIP and promotes the package to 53 STL
+- LEGO Technic remains intentionally separate
+- package creates manifest, SHA-256 sums and ZIP round-trip count verification
+
+### HAP-045 — Practical Build Recipes
+- adds low, raised, tall, bridge and stability build recipes
+- maps printable LEGO structural parts to their matching HAP adapters/carriers
+- documents a staged print strategy so the full ecosystem does not need to be printed at once
+- keeps native donor handling private and non-reconstructed
+
+### HAP-046 — Complete Kit CI / Artifact
+- PowerShell syntax gate includes BUILD_COMPLETE_PRINT_KIT.ps1
+- CI creates and verifies the 51-STL public/no-native complete kit
+- dedicated artifact contains the ZIP, SHA-256 sidecar, recipe CSV and complete-kit guide
+
 ## Current automated build
 
 Expected core output: **47 STL files** plus synthetic donor/native-connector smoke outputs.
@@ -384,6 +404,10 @@ Fit-critical interfaces remain provisional:
 - 25-part printable LEGO-compatible underbuild: IMPLEMENTED
 - 12-part structural starter pack: IMPLEMENTED
 - Structural-pack geometry audit + CI artifact: IMPLEMENTED
+- Complete direct-print kit builder: IMPLEMENTED
+- 51-STL no-Technic/no-native CI distribution: IMPLEMENTED
+- 53-STL private complete no-Technic distribution when native connector ZIP is supplied: IMPLEMENTED
+- Structural-to-HAP build recipes: IMPLEMENTED
 - Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
 - Snake donor: HOLD_LICENSE
 - Actual printed donor derivatives: NOT YET PHYSICALLY VALIDATED

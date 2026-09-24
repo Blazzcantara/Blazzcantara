@@ -46,6 +46,7 @@ jobs:
             "HAP/BUILD_PHYSICAL_WORKBENCH.ps1",
             "HAP/BUILD_DIGITAL_STL_SET.ps1",
             "HAP/BUILD_LEGO_STRUCTURAL_PACK.ps1",
+            "HAP/BUILD_COMPLETE_PRINT_KIT.ps1",
             "HAP/PHYSICAL_WORKBENCH_MENU.ps1"
           )
 
@@ -294,6 +295,33 @@ jobs:
           if ($starterCount -ne 12) { throw "Expected 12 starter STLs, found $starterCount." }
 
           Write-Host "LEGO Structural Pack PASS: 25 full / 12 starter" -ForegroundColor Green
+
+      - name: Build complete no-Technic print kit
+        shell: pwsh
+        run: |
+          ./HAP/BUILD_COMPLETE_PRINT_KIT.ps1 `
+            -HapOutDir "./HAP/out" `
+            -StructuralPackDir "./HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1" `
+            -OutputDir "./HAP/complete_print_out"
+
+          $zip = "./HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2.zip"
+          $stage = "./HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2"
+
+          if (-not (Test-Path $zip)) {
+            throw "Complete no-Technic print-kit ZIP missing."
+          }
+
+          $count = (Get-ChildItem $stage -Recurse -Filter "*.stl" -File).Count
+          if ($count -ne 51) {
+            throw "Expected 51 no-Technic/no-native STL files, found $count."
+          }
+
+          $manifest = Import-Csv (Join-Path $stage "STL_MANIFEST.csv")
+          if ($manifest.Count -ne 51) {
+            throw "Expected 51 manifest rows, found $($manifest.Count)."
+          }
+
+          Write-Host "Complete no-Technic print kit PASS: 51 STL" -ForegroundColor Green
 
       - name: Validate donor registry and recipes
         shell: bash
@@ -699,3 +727,13 @@ jobs:
             HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1.zip.sha256
             HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1.zip
             HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1.zip.sha256
+
+      - name: Upload complete no-Technic print kit
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAP-complete-direct-print-no-technic-v0.2
+          path: |
+            HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2.zip
+            HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2.zip.sha256
+            HAP/print_kits/PRINT_KIT_RECIPES_v0.2.csv
+            HAP/print_kits/COMPLETE_PRINT_KIT_GUIDE_v0.2.md
