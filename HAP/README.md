@@ -1,4 +1,4 @@
-# Hybrid Adapter Pack v0.1 — HAP-002..036
+# Hybrid Adapter Pack v0.1 — HAP-002..040
 
 ## Status
 
@@ -212,6 +212,34 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - when all five real winners exist, automatically seals the physical profile
 - then automatically creates the six-part physical pilot package
 
+
+
+### HAP-037 — Minimal Next-Print Queue
+- reads the current physical-results state
+- copies only one useful next candidate per unfinished interface gate
+- includes the reusable HAP core reference only when the core-clearance gate needs it
+- initial queue is 5 active candidates + 1 reusable core instead of the full 23-part campaign
+- TIGHT / LOOSE results steer the queue toward the nearest useful candidate
+
+### HAP-038 — Physical Operator Dashboard
+- generates Markdown, HTML and JSON status views
+- shows all five interface gates, tested counts and current winners
+- tracks first pilot, structural and advanced show states when result files exist
+- reports current blockers and the active overall physical stage
+
+### HAP-039 — Physical Checkpoint / Restore
+- snapshots campaign CSV / JSON evidence
+- creates a checkpoint manifest and SHA-256-sealed ZIP
+- restore verifies every file hash before accepting the checkpoint
+- intended before winner replacement and each major physical promotion stage
+
+### HAP-040 — Self-Contained Physical Workbench
+- builds HAP_PHYSICAL_WORKBENCH_v0.1.zip
+- contains staged calibration files, working CSV, next-print queue and dashboard
+- includes required operator scripts, CAD helpers and STL audit tool
+- Windows entry point: START_HAP_PHYSICAL.cmd
+- launcher refreshes next-print queue and dashboard after each campaign run
+
 ## Current automated build
 
 Expected core output: **47 STL files** plus synthetic donor/native-connector smoke outputs.
@@ -222,7 +250,7 @@ Windows:
 
 CI packages the complete result as:
 
-    HAP_v0.1_PHYSICAL_CAMPAIGN_UX.zip
+    HAP_v0.1_PHYSICAL_WORKBENCH.zip
 
 ## Interface SSOT
 
@@ -272,6 +300,7 @@ Fit-critical interfaces remain provisional:
 - show/SHOW_RESULTS_TEMPLATE_v0.1.csv
 - FINALIZATION_GUIDE_v1.0.md
 - FINAL_RELEASE_GATE_MATRIX_v1.0.md
+- PHYSICAL_WORKBENCH_GUIDE_v0.1.md
 
 ## Architecture
 
@@ -321,6 +350,10 @@ Fit-critical interfaces remain provisional:
 - Adaptive physical result recorder: IMPLEMENTED
 - Tight/loose next-test advisor: IMPLEMENTED
 - One-command physical campaign runner: IMPLEMENTED
+- Minimal next-print queue: IMPLEMENTED
+- Physical Markdown/HTML/JSON dashboard: IMPLEMENTED
+- Physical evidence checkpoint/restore: IMPLEMENTED
+- Self-contained Windows physical workbench: IMPLEMENTED
 - Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
 - Snake donor: HOLD_LICENSE
 - Actual printed donor derivatives: NOT YET PHYSICALLY VALIDATED
