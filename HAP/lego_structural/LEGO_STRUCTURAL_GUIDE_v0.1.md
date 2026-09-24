@@ -40,12 +40,14 @@ Five standard stackable blocks:
 - 4x4
 
 ### 02 Plates
-Six low-profile stackable plates:
+Eight low-profile stackable plates:
 - 2x2
 - 2x4
 - 4x4
 - 4x6
 - 6x6
+- 7x2 — exact centered support for the 40 mm dual-foot family
+- 7x7 — exact centered low base for the 40 mm cross-outrigger
 - 8x8
 
 ### 03 Risers
@@ -56,26 +58,52 @@ when the goal is simply to raise a GraviTrax support quickly.
 Three tall one-piece columns for high track levels.
 
 ### 05 HAP supports
-Six larger bases / piers sized for common HAP support roles.
+Eight larger bases / piers sized for common HAP support roles, including exact S40/10x4 alignment parts.
 
 ## Recommended direct-print starter set
 
-The generated starter ZIP contains 12 parts:
+The generated starter ZIP contains 15 parts:
 - Brick 2x2
 - Brick 2x4
 - Brick 2x8
 - Plate 4x4
 - Plate 6x6
+- Plate 7x2
 - Plate 8x8
 - Riser 2x2 H2
 - Riser 2x2 H3
 - Riser 2x4 H3
 - Tower 2x2 H10
 - Foundation 6x6 H1
+- Foundation 7x7 H1
 - Bridge Support 4x8 H3
+- Bridge Support 10x4 H3
 
 This set is intended to provide immediate structural variety without printing all
-25 parts.
+29 parts.
+
+
+## Grid-parity closure for HAP bridge/outrigger families
+
+The deep pre-print audit found an important even/odd-grid issue that the original
+25-part pack did not cover.
+
+HAP support centers are not all compatible with the same centered LEGO footprint:
+
+- `HAP_DUAL_FOOT_CORE_S32`: two 2x2 feet at ±16 mm. Their studs align to a centered **6-wide** grid.
+- `HAP_DUAL_FOOT_CORE_S40`: two 2x2 feet at ±20 mm. Their studs align to a centered **7-wide** grid, not a centered 6xN or 8xN grid.
+- `HAP_CROSS_OUTRIGGER_CORE_S40`: four 2x2 feet at ±20 mm in X/Y. It therefore needs a centered **7x7** stud field for exact support.
+- `HAP_BRIDGE_DUAL_CORE_10x4_S40`: its LEGO underside is an actual **10x4** footprint and should have a matching 10x4 structural pier when used as a one-piece stack.
+
+For this reason v0.1 now includes four parity-closure parts:
+
+- `PLATE_7x2`
+- `PLATE_7x7`
+- `FOUNDATION_7x7_H1`
+- `BRIDGE_SUPPORT_10x4_H3`
+
+These are not decorative variants; they close real geometric support gaps found
+during the full pre-print audit.
 
 ## How it connects to the existing HAP parts
 
