@@ -94,6 +94,14 @@ def main():
 
     warnings=[]
     rows=[]
+    warnings.append(
+        "Printed LEGO top-stud fit is NOMINAL ONLY: LEGO_STUD_D=4.80 mm and LEGO_STUD_DELTA=0.00. "
+        "No separate real top-stud physical gate exists because the direct-print path intentionally skipped fit calibration."
+    )
+    warnings.append(
+        "The new 25-part LEGO Structural Pack is a v0.2 pre-print add-on. The older HAP_FINAL_v1.0.0 builder still seals the "
+        "original 38-part scope and does not yet claim these 25 parts as physically released."
+    )
 
     pairs={
         "pitch":("lego_pitch","LEGO_PITCH"),
@@ -254,6 +262,8 @@ def main():
             "max_nominal_roof_bridge_mm":round(max_roof_bridge,3),
             "support_free_geometry_guard":"PASS",
         },
+        "printed_top_stud_fit_state":"NOMINAL_4.80_STUD_DELTA_0.00_PHYSICAL_GATE_SKIPPED",
+        "final_release_scope_note":"HAP_FINAL_v1.0.0 remains the original 38-part physically-gated scope; LEGO Structural Pack is v0.2 pre-print add-on.",
         "warnings":warnings,"physical_fit_sealed":False,
     }
     (pkg_root/"03_AUDIT"/"PREPRINT_AUDIT.json").write_text(json.dumps(summary,indent=2),encoding="utf-8")
