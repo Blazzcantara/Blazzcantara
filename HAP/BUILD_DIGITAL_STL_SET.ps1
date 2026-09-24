@@ -139,7 +139,7 @@ $shaPath = Join-Path $Stage "SHA256SUMS.txt"
 $hashLines = Get-ChildItem $Stage -Recurse -Filter "*.stl" -File |
   Sort-Object FullName |
   ForEach-Object {
-    $relative = $_.FullName.Substring($Stage.Length).TrimStart([char[]]"\/")
+    $relative = $_.FullName.Substring($StageResolved.Length).TrimStart([char[]]"\/")
     $hash = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant()
     "$hash  $relative"
   }
