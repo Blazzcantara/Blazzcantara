@@ -119,11 +119,30 @@ $requiredDonorDocs = @(
   "07_DOCUMENTATION\DONOR_LICENSE_ORIGINAL.txt",
   "07_DOCUMENTATION\DONOR_README_ORIGINAL.txt",
   "07_DOCUMENTATION\DONOR_ATTRIBUTION_v0.1.md",
-  "07_DOCUMENTATION\LICENSE.md"
+  "07_DOCUMENTATION\LICENSE.md",
+  "07_DOCUMENTATION\HAP_MASTER_v0.1.scad",
+  "07_DOCUMENTATION\DONOR_NATIVE_CONNECTOR_v0.1.scad",
+  "07_DOCUMENTATION\BUILD_NATIVE_CONNECTOR_PILOT.ps1",
+  "07_DOCUMENTATION\INTERFACE_SSOT_v0.1.md"
 )
 foreach ($relative in $requiredDonorDocs) {
   if (-not (Test-Path (Join-Path $ReleaseDir $relative))) {
-    throw "Required donor/license documentation missing: $relative"
+    throw "Required donor/license/source documentation missing: $relative"
+  }
+}
+
+$packagedSourceChecks = [ordered]@{
+  hap_master_sha256 = "07_DOCUMENTATION\HAP_MASTER_v0.1.scad"
+  native_connector_cad_sha256 = "07_DOCUMENTATION\DONOR_NATIVE_CONNECTOR_v0.1.scad"
+  native_connector_builder_sha256 = "07_DOCUMENTATION\BUILD_NATIVE_CONNECTOR_PILOT.ps1"
+  interface_ssot_sha256 = "07_DOCUMENTATION\INTERFACE_SSOT_v0.1.md"
+}
+foreach ($entry in $packagedSourceChecks.GetEnumerator()) {
+  $expected = $profile.source_lock.($entry.Key)
+  $path = Join-Path $ReleaseDir $entry.Value
+  $actual = (Get-FileHash -Algorithm SHA256 $path).Hash.ToLowerInvariant()
+  if ([string]::IsNullOrWhiteSpace($expected) -or $actual -ne $expected) {
+    throw "Packaged source lock mismatch: $($entry.Key)"
   }
 }
 
@@ -211,6 +230,7 @@ $receipt = [ordered]@{
   distribution = $expectedStlDistribution
   show_module_ids = $expectedShowIds
   donor_documentation = "PASS"
+  packaged_source_lock = "PASS"
   validation_scope = "PASS"
   manifest_rows = $manifest.Count
   sha256sum_entries = $sumLines.Count
