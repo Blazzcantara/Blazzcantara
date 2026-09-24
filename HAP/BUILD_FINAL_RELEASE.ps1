@@ -239,6 +239,9 @@ try {
     $row = $registry | Where-Object { $_.donor_id -eq $id } | Select-Object -First 1
     if (-not $row) { throw "Missing donor registry row: $id" }
     if ($row.license_state -ne "CC_ATTRIBUTION") { throw "Donor is not redistribution-eligible: $id" }
+    if ($row.conversion_state -ne "READY_FOR_PRIVATE_CONVERSION") {
+      throw "Donor is not in the final conversion-ready state: $id"
+    }
 
     $wanted = $row.source_path.Replace("\","/")
     $entry = $zip.Entries | Where-Object { $_.FullName.Replace("\","/") -eq $wanted } | Select-Object -First 1
@@ -262,21 +265,24 @@ try {
     Where-Object { $_.FullName -like "Gravitrax Tiles Variations Collection - 4538769 -*README.txt" } |
     Select-Object -First 1
 
-  if ($licenseEntry) {
-    [System.IO.Compression.ZipFileExtensions]::ExtractToFile(
-      $licenseEntry,
-      (Join-Path $Release "07_DOCUMENTATION\DONOR_LICENSE_ORIGINAL.txt"),
-      $true
-    )
+  if (-not $licenseEntry) {
+    throw "Approved donor family LICENSE.txt is missing from the source archive."
+  }
+  if (-not $readmeEntry) {
+    throw "Approved donor family README.txt is missing from the source archive."
   }
 
-  if ($readmeEntry) {
-    [System.IO.Compression.ZipFileExtensions]::ExtractToFile(
-      $readmeEntry,
-      (Join-Path $Release "07_DOCUMENTATION\DONOR_README_ORIGINAL.txt"),
-      $true
-    )
-  }
+  [System.IO.Compression.ZipFileExtensions]::ExtractToFile(
+    $licenseEntry,
+    (Join-Path $Release "07_DOCUMENTATION\DONOR_LICENSE_ORIGINAL.txt"),
+    $true
+  )
+
+  [System.IO.Compression.ZipFileExtensions]::ExtractToFile(
+    $readmeEntry,
+    (Join-Path $Release "07_DOCUMENTATION\DONOR_README_ORIGINAL.txt"),
+    $true
+  )
 }
 finally {
   $zip.Dispose()
