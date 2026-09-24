@@ -295,6 +295,26 @@ jobs:
 
           Write-Host "LEGO Structural Pack PASS: 25 full / 12 starter" -ForegroundColor Green
 
+      - name: Full pre-print system audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 HAP/tools/AUDIT_PREPRINT_SYSTEM.py             --repo-root .             --output-dir HAP/preprint_audit_out
+
+          test -f HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/03_AUDIT/PREPRINT_AUDIT.json
+          test -f HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/03_AUDIT/PREPRINT_MANIFEST.csv
+
+          COUNT=$(find HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2 -name '*.stl' | wc -l)
+          test "$COUNT" -eq 51
+
+          (
+            cd HAP/preprint_audit_out
+            zip -r HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2
+          )
+
+          test -s HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip
+          sha256sum HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip             > HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip.sha256
+
       - name: Validate donor registry and recipes
         shell: bash
         run: |
@@ -415,7 +435,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile HAP/tools/STL_COMPONENT_AUDIT.py
+          python3 -m py_compile HAP/tools/STL_COMPONENT_AUDIT.py HAP/tools/AUDIT_PREPRINT_SYSTEM.py
           echo "Python tool syntax PASS"
 
       - name: Audit source consistency
@@ -699,3 +719,14 @@ jobs:
             HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1.zip.sha256
             HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1.zip
             HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1.zip.sha256
+
+      - name: Upload pre-print full audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAP-preprint-full-audit-v0.2
+          path: |
+            HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip
+            HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip.sha256
+            HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/03_AUDIT/PREPRINT_AUDIT.json
+            HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/03_AUDIT/PREPRINT_MANIFEST.csv
+            HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/00_PREPRINT_AUDIT_README.md
