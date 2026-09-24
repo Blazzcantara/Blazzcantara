@@ -79,6 +79,54 @@ if ($stls.Count -ne 38) {
   throw "Expected 38 final STL files, found $($stls.Count)."
 }
 
+$expectedStlDistribution = [ordered]@{
+  "01_CORE_ADAPTERS" = 11
+  "02_STRUCTURAL" = 11
+  "03_NATIVE_CONNECTOR" = 2
+  "04_SHOW_MODULES" = 8
+  "05_FALLBACK_DONOR_MOUNTS" = 6
+}
+
+foreach ($entry in $expectedStlDistribution.GetEnumerator()) {
+  $dir = Join-Path $ReleaseDir $entry.Key
+  $count = @(Get-ChildItem $dir -Filter "*.stl" -File).Count
+  if ($count -ne $entry.Value) {
+    throw "Final STL distribution mismatch in $($entry.Key): expected $($entry.Value), found $count."
+  }
+}
+
+$expectedShowIds = @(
+  "SHOW-ST01",
+  "SHOW-CV01",
+  "SHOW-SC01",
+  "SHOW-X01",
+  "SHOW-SP01",
+  "SHOW-LP01",
+  "SHOW-WP01",
+  "SHOW-SOL01"
+)
+$showFiles = @(Get-ChildItem (Join-Path $ReleaseDir "04_SHOW_MODULES") -Filter "*.stl" -File)
+foreach ($id in $expectedShowIds) {
+  if (@($showFiles | Where-Object { $_.Name -like ($id + "_*") }).Count -ne 1) {
+    throw "Final show-module set is missing or duplicates donor ID: $id"
+  }
+}
+if (@($showFiles | Where-Object { $_.Name -like "SHOW-SNAKE01_*" }).Count -gt 0) {
+  throw "License-held Snake donor must not appear in the final release."
+}
+
+$requiredDonorDocs = @(
+  "07_DOCUMENTATION\DONOR_LICENSE_ORIGINAL.txt",
+  "07_DOCUMENTATION\DONOR_README_ORIGINAL.txt",
+  "07_DOCUMENTATION\DONOR_ATTRIBUTION_v0.1.md",
+  "07_DOCUMENTATION\LICENSE.md"
+)
+foreach ($relative in $requiredDonorDocs) {
+  if (-not (Test-Path (Join-Path $ReleaseDir $relative))) {
+    throw "Required donor/license documentation missing: $relative"
+  }
+}
+
 $forbidden = @(
   "CAL_",
   "SMOKE",
@@ -145,6 +193,9 @@ $receipt = [ordered]@{
   reality_state = "FINAL_AUDIT_PASS"
   generated_utc = [DateTime]::UtcNow.ToString("o")
   final_stl_count = $stls.Count
+  distribution = $expectedStlDistribution
+  show_module_ids = $expectedShowIds
+  donor_documentation = "PASS"
   manifest_rows = $manifest.Count
   sha256sum_entries = $sumLines.Count
   evidence_linkage = "PASS"
