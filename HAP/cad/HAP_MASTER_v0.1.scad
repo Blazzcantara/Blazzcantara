@@ -597,11 +597,39 @@ module cross_outrigger_core(
     core_clearance=0.30,
     deck_h=4.0
 ) {
-    union() {
-        dual_lego_foot_core(2,2,foot_spacing,xy_scale,core_clearance,deck_h);
+    // Build the four-foot cross first and add exactly ONE core receiver.
+    // The previous implementation unioned two complete dual-foot modules,
+    // each with its own differently rotated socket. Their union could partially
+    // fill the intended HAP core cavity and shrink it into a non-standard shape.
+    foot_w = 2*lego_pitch - lego_gap;
+    foot_d = 2*lego_pitch - lego_gap;
+    arm_span = foot_spacing + foot_w;
+    z0 = lego_plate_h;
+    socket_overlap = 0.20;
 
-        rotate([0,0,90])
-            dual_lego_foot_core(2,2,foot_spacing,xy_scale,core_clearance,deck_h);
+    union() {
+        // Four independent LEGO feet.
+        for (sx=[-foot_spacing/2,foot_spacing/2])
+            translate([sx,0,0])
+                lego_tile_bottom(2,2,xy_scale);
+
+        for (sy=[-foot_spacing/2,foot_spacing/2])
+            translate([0,sy,0])
+                lego_tile_bottom(2,2,xy_scale);
+
+        // Orthogonal load paths. Keeping the arms narrow saves material while
+        // the central HAP receiver supplies the wide anti-twist footprint.
+        centered_cube_xy(arm_span,foot_d,deck_h,z0);
+        centered_cube_xy(foot_w,arm_span,deck_h,z0);
+
+        // Single canonical socket orientation with a small vertical overlap so
+        // the receiver and cross deck form one robust printable solid.
+        core_socket_top(
+            gt_support_outer_flat,
+            core_clearance,
+            z0+deck_h-socket_overlap,
+            full_hex_shell_h
+        );
     }
 }
 
