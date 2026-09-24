@@ -17,6 +17,9 @@ $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ")
 $stage = Join-Path $CheckpointDir ("checkpoint_" + $stamp)
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 
+$WorkResolved = $WorkResolved
+$StageResolved = (Resolve-Path $stage).Path
+
 $patterns = @(
   "PHYSICAL_RESULTS_WORKING.csv",
   "PHYSICAL_PROFILE_v0.1.json",
@@ -36,7 +39,7 @@ $copied = @()
 foreach ($pattern in $patterns) {
   $matches = @(Get-ChildItem $WorkDir -Recurse -File -Filter $pattern -ErrorAction SilentlyContinue)
   foreach ($file in $matches) {
-    $relative = $file.FullName.Substring((Resolve-Path $WorkDir).Path.Length).TrimStart([char[]]"\/")
+    $relative = $file.FullName.Substring($WorkResolved.Length).TrimStart([char[]]"\/")
     $dst = Join-Path $stage $relative
     $parent = Split-Path -Parent $dst
     if ($parent) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
@@ -51,7 +54,7 @@ if ($copied.Count -eq 0) {
 }
 
 $manifest = foreach ($file in ($copied | Sort-Object FullName)) {
-  $relative = $file.FullName.Substring($stage.Length).TrimStart([char[]]"\/")
+  $relative = $file.FullName.Substring($StageResolved.Length).TrimStart([char[]]"\/")
   [pscustomobject]@{
     relative_path = $relative
     size_bytes = $file.Length
@@ -65,7 +68,7 @@ $manifest | Export-Csv -NoTypeInformation -Encoding UTF8 -Path $manifestPath
 $meta = [ordered]@{
   checkpoint_version = "0.1"
   created_utc = [DateTime]::UtcNow.ToString("o")
-  source_work_dir = (Resolve-Path $WorkDir).Path
+  source_work_dir = $WorkResolved
   file_count = $manifest.Count
   manifest_sha256 = (Get-FileHash -Algorithm SHA256 $manifestPath).Hash.ToLowerInvariant()
 }
