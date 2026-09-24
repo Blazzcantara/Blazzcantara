@@ -13,11 +13,12 @@ if (-not (Test-Path $WorkDir)) {
 
 New-Item -ItemType Directory -Force -Path $CheckpointDir | Out-Null
 
-$stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ")
+$stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssfffZ")
 $stage = Join-Path $CheckpointDir ("checkpoint_" + $stamp)
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 
 $WorkResolved = (Resolve-Path $WorkDir).Path
+$CheckpointResolved = (Resolve-Path $CheckpointDir).Path
 $StageResolved = (Resolve-Path $stage).Path
 
 $patterns = @(
@@ -37,7 +38,21 @@ $patterns = @(
 
 $copied = @()
 foreach ($pattern in $patterns) {
-  $matches = @(Get-ChildItem $WorkDir -Recurse -File -Filter $pattern -ErrorAction SilentlyContinue)
+  $matches = @(
+    Get-ChildItem $WorkDir -Recurse -File -Filter $pattern -ErrorAction SilentlyContinue |
+      Where-Object {
+        -not $_.FullName.StartsWith(
+          $CheckpointResolved + [System.IO.Path]::DirectorySeparatorChar,
+          [System.StringComparison]::OrdinalIgnoreCase
+        )
+      }
+  )
+
+  if ($matches.Count -gt 1) {
+    $paths = ($matches | ForEach-Object { $_.FullName }) -join "; "
+    throw "Ambiguous active campaign state for $pattern. Found: $paths"
+  }
+
   foreach ($file in $matches) {
     $relative = $file.FullName.Substring($WorkResolved.Length).TrimStart([char[]]"\/")
     $dst = Join-Path $stage $relative
