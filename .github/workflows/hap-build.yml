@@ -98,6 +98,12 @@ jobs:
           echo "STL count: $COUNT"
           test "$COUNT" -eq 47
 
+      - name: Audit HAP source consistency
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 HAP/tools/AUDIT_SOURCE_CONSISTENCY.py
+
       - name: Audit all HAP STL geometry
         shell: bash
         run: |
