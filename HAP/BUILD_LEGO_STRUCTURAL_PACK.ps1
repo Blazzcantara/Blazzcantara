@@ -228,7 +228,7 @@ $starterNames = @(
   "HAP_LEGO_RISER_2x2_H2_v0.1.stl",
   "HAP_LEGO_RISER_2x2_H3_v0.1.stl",
   "HAP_LEGO_RISER_2x4_H3_v0.1.stl",
-  "HAP_LEGO_TOWER_2x2_H10_v0.1.stl",
+  "HAP_LEGO_TOWER_4x4_H5_v0.1.stl",
   "HAP_LEGO_FOUNDATION_6x6_H1_v0.1.stl",
   "HAP_LEGO_FOUNDATION_7x7_H1_v0.1.stl",
   "HAP_LEGO_BRIDGE_SUPPORT_4x8_H3_v0.1.stl",
@@ -255,7 +255,7 @@ Recommended first use:
 - PLATE 6x6 / 8x8 for broad HAP bases
 - PLATE 7x2 for exact S40 dual-foot alignment
 - RISER 2x2 H2/H3 for fast GraviTrax height changes
-- TOWER 2x2 H10 for tall support columns
+- TOWER 4x4 H5 for a more stable medium-height support
 - FOUNDATION 6x6 for wide single-support bases
 - FOUNDATION 7x7 for exact S40 cross-outrigger alignment
 - BRIDGE SUPPORT 4x8 H3 for elevated 8x4 bridge structures
