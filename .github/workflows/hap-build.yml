@@ -129,6 +129,64 @@ jobs:
           test "$FAIL" -eq 0
           echo "All 47 HAP STL geometry audits PASS"
 
+      - name: Deep-audit all 47 generated STLs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p HAP/geometry_audit_ci
+          COUNT=0
+
+          for STL in HAP/out/*.stl; do
+            NAME="$(basename "$STL" .stl)"
+            python3 HAP/tools/STL_COMPONENT_AUDIT.py "$STL" \
+              --json-out "HAP/geometry_audit_ci/$NAME.json" \
+              --expect-positive-shells 1 \
+              --require-watertight \
+              --require-no-degenerate
+            COUNT=$((COUNT+1))
+          done
+
+          test "$COUNT" -eq 47
+
+          python3 - <<'PY'
+          import json, pathlib
+
+          root = pathlib.Path("HAP/geometry_audit_ci")
+          reports = sorted(root.glob("*.json"))
+          assert len(reports) == 47, len(reports)
+
+          failures = []
+          summary = []
+
+          for p in reports:
+              d = json.loads(p.read_text(encoding="utf-8"))
+              ok = (
+                  d["positive_shells"] == 1
+                  and d["watertight_edge_test"] is True
+                  and d["degenerate_triangle_count"] == 0
+              )
+              summary.append({
+                  "file": d["file"],
+                  "triangles": d["triangles"],
+                  "surface_shells": d["surface_shells"],
+                  "positive_shells": d["positive_shells"],
+                  "negative_shells": d["negative_shells"],
+                  "bbox_extent_mm": d["bbox_extent_mm"],
+                  "net_signed_volume_mm3": d["net_signed_volume_mm3"],
+                  "ok": ok,
+              })
+              if not ok:
+                  failures.append(d["file"])
+
+          pathlib.Path("HAP/geometry_audit_ci/SUMMARY.json").write_text(
+              json.dumps(summary, indent=2),
+              encoding="utf-8"
+          )
+
+          assert not failures, failures
+          print("Deep STL audit PASS: 47/47 watertight, one positive solid shell, zero degenerate triangles")
+          PY
+
       - name: Validate donor registry and recipes
         shell: bash
         run: |
@@ -493,7 +551,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          zip -r HAP_v0.1_PHYSICAL_WORKBENCH.zip             HAP/out             HAP/geometry_audit             HAP/README.md             HAP/INTERFACE_SSOT_v0.1.md             HAP/PHYSICAL_TEST_MATRIX_v0.1.md             HAP/STRUCTURAL_TEST_MATRIX_v0.1.md             HAP/TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md             HAP/DONOR_CONVERSION_RULES_v0.1.md             HAP/BUILD_DONOR_CONVERSION.ps1             HAP/BUILD_DONOR_BATCH.ps1             HAP/BUILD_NATIVE_CONNECTOR_PILOT.ps1             HAP/CREATE_CALIBRATION_PACK.ps1             HAP/SEAL_PHYSICAL_PROFILE.ps1             HAP/BUILD_PHYSICAL_PILOT.ps1             HAP/CHECK_PHYSICAL_PROGRESS.ps1             HAP/VALIDATE_PHYSICAL_PILOT.ps1             HAP/VALIDATE_STRUCTURAL_RESULTS.ps1             HAP/VALIDATE_SHOW_PROMOTION.ps1             HAP/FINAL_RELEASE_AUDIT.ps1             HAP/BUILD_FINAL_RELEASE.ps1             HAP/RECORD_PHYSICAL_RESULT.ps1             HAP/NEXT_CALIBRATION_TEST.ps1             HAP/RUN_PHYSICAL_CAMPAIGN.ps1             HAP/BUILD_NEXT_PRINT_QUEUE.ps1             HAP/BUILD_PHYSICAL_DASHBOARD.ps1             HAP/SAVE_PHYSICAL_CHECKPOINT.ps1             HAP/RESTORE_PHYSICAL_CHECKPOINT.ps1             HAP/REFRESH_PHYSICAL_WORKBENCH.ps1             HAP/BUILD_PHYSICAL_WORKBENCH.ps1             HAP/PHYSICAL_WORKBENCH_MENU.ps1             HAP/START_HAP_PHYSICAL.cmd             HAP/PHYSICAL_WORKBENCH_GUIDE_v0.1.md             HAP/FINALIZATION_GUIDE_v1.0.md             HAP/FINAL_RELEASE_GATE_MATRIX_v1.0.md             HAP/CI_DONOR_SMOKE_REPORT.txt             HAP/donors/DONOR_REGISTRY_v0.1.csv             HAP/donors/DONOR_RECIPES_v0.1.csv             HAP/donors/DONOR_ATTRIBUTION_v0.1.md             HAP/donors/DONOR_PIPELINE_v0.1.md             HAP/donors/DONOR_TEST_MATRIX_v0.1.md             HAP/donors/DONOR_BATCH_QA_GUIDE_v0.1.md             HAP/donors/NATIVE_CONNECTOR_SSOT_v0.1.md             HAP/donors/PILOT_SHOW_MODULES_v0.1.md             HAP/calibration/PHYSICAL_RESULTS_TEMPLATE_v0.1.csv             HAP/calibration/CALIBRATION_RESULTS_CI_FIXTURE_v0.1.csv             HAP/calibration/CALIBRATION_CAMPAIGN_v0.1.md             HAP/calibration/CALIBRATION_PLATE_PLAN_v0.1.csv             HAP/calibration/KOBRA_S1_CALIBRATION_PROFILE_v0.1.md             HAP/pilot/PILOT_RESULTS_TEMPLATE_v0.1.csv             HAP/structural/STRUCTURAL_RESULTS_TEMPLATE_v0.1.csv             HAP/show/SHOW_RESULTS_TEMPLATE_v0.1.csv             HAP/ci/PILOT_RESULTS_CI_FIXTURE_v0.1.csv             HAP/ci/STRUCTURAL_RESULTS_CI_FIXTURE_v0.1.csv             HAP/ci/SHOW_RESULTS_CI_FIXTURE_v0.1.csv             HAP/LICENSE.md             HAP/cad/HAP_MASTER_v0.1.scad             HAP/cad/DONOR_CONVERTER_v0.1.scad             HAP/cad/DONOR_SMOKE_FIXTURE.scad             HAP/cad/DONOR_NATIVE_CONNECTOR_v0.1.scad             HAP/tools/STL_COMPONENT_AUDIT.py             HAP/BUILD_ALL.ps1
+          zip -r HAP_v0.1_PHYSICAL_WORKBENCH.zip             HAP/out             HAP/geometry_audit             HAP/README.md             HAP/INTERFACE_SSOT_v0.1.md             HAP/PHYSICAL_TEST_MATRIX_v0.1.md             HAP/STRUCTURAL_TEST_MATRIX_v0.1.md             HAP/TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md             HAP/DONOR_CONVERSION_RULES_v0.1.md             HAP/BUILD_DONOR_CONVERSION.ps1             HAP/BUILD_DONOR_BATCH.ps1             HAP/BUILD_NATIVE_CONNECTOR_PILOT.ps1             HAP/CREATE_CALIBRATION_PACK.ps1             HAP/SEAL_PHYSICAL_PROFILE.ps1             HAP/BUILD_PHYSICAL_PILOT.ps1             HAP/CHECK_PHYSICAL_PROGRESS.ps1             HAP/VALIDATE_PHYSICAL_PILOT.ps1             HAP/VALIDATE_STRUCTURAL_RESULTS.ps1             HAP/VALIDATE_SHOW_PROMOTION.ps1             HAP/FINAL_RELEASE_AUDIT.ps1             HAP/BUILD_FINAL_RELEASE.ps1             HAP/RECORD_PHYSICAL_RESULT.ps1             HAP/NEXT_CALIBRATION_TEST.ps1             HAP/RUN_PHYSICAL_CAMPAIGN.ps1             HAP/BUILD_NEXT_PRINT_QUEUE.ps1             HAP/BUILD_PHYSICAL_DASHBOARD.ps1             HAP/SAVE_PHYSICAL_CHECKPOINT.ps1             HAP/RESTORE_PHYSICAL_CHECKPOINT.ps1             HAP/REFRESH_PHYSICAL_WORKBENCH.ps1             HAP/BUILD_PHYSICAL_WORKBENCH.ps1             HAP/PHYSICAL_WORKBENCH_MENU.ps1             HAP/START_HAP_PHYSICAL.cmd             HAP/PHYSICAL_WORKBENCH_GUIDE_v0.1.md             HAP/FINALIZATION_GUIDE_v1.0.md             HAP/FINAL_RELEASE_GATE_MATRIX_v1.0.md             HAP/CI_DONOR_SMOKE_REPORT.txt             HAP/geometry_audit_ci             HAP/donors/DONOR_REGISTRY_v0.1.csv             HAP/donors/DONOR_RECIPES_v0.1.csv             HAP/donors/DONOR_ATTRIBUTION_v0.1.md             HAP/donors/DONOR_PIPELINE_v0.1.md             HAP/donors/DONOR_TEST_MATRIX_v0.1.md             HAP/donors/DONOR_BATCH_QA_GUIDE_v0.1.md             HAP/donors/NATIVE_CONNECTOR_SSOT_v0.1.md             HAP/donors/PILOT_SHOW_MODULES_v0.1.md             HAP/calibration/PHYSICAL_RESULTS_TEMPLATE_v0.1.csv             HAP/calibration/CALIBRATION_RESULTS_CI_FIXTURE_v0.1.csv             HAP/calibration/CALIBRATION_CAMPAIGN_v0.1.md             HAP/calibration/CALIBRATION_PLATE_PLAN_v0.1.csv             HAP/calibration/KOBRA_S1_CALIBRATION_PROFILE_v0.1.md             HAP/pilot/PILOT_RESULTS_TEMPLATE_v0.1.csv             HAP/structural/STRUCTURAL_RESULTS_TEMPLATE_v0.1.csv             HAP/show/SHOW_RESULTS_TEMPLATE_v0.1.csv             HAP/ci/PILOT_RESULTS_CI_FIXTURE_v0.1.csv             HAP/ci/STRUCTURAL_RESULTS_CI_FIXTURE_v0.1.csv             HAP/ci/SHOW_RESULTS_CI_FIXTURE_v0.1.csv             HAP/LICENSE.md             HAP/cad/HAP_MASTER_v0.1.scad             HAP/cad/DONOR_CONVERTER_v0.1.scad             HAP/cad/DONOR_SMOKE_FIXTURE.scad             HAP/cad/DONOR_NATIVE_CONNECTOR_v0.1.scad             HAP/tools/STL_COMPONENT_AUDIT.py             HAP/BUILD_ALL.ps1
 
       - uses: actions/upload-artifact@v4
         with:
