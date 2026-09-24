@@ -9,6 +9,12 @@ $SmokeFixture = Join-Path $Root "cad\DONOR_SMOKE_FIXTURE.scad"
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 New-Item -ItemType Directory -Force -Path $SmokeOut | Out-Null
 
+# Remove stale STL outputs before counting. Re-running the local build must not
+# inherit files from an older HAP revision.
+Write-Host "Remove stale STL outputs ..." -ForegroundColor DarkGray
+Get-ChildItem $Out -Filter "*.stl" -File -ErrorAction SilentlyContinue | Remove-Item -Force
+Get-ChildItem $SmokeOut -Filter "*.stl" -File -ErrorAction SilentlyContinue | Remove-Item -Force
+
 $candidates = @(
   "openscad.com",
   "openscad.exe",
