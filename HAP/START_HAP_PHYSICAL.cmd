@@ -19,7 +19,8 @@ if "%HAP_ARCHIVE%"=="" (
 
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0RUN_PHYSICAL_CAMPAIGN.ps1" ^
   -ArchivePath "%HAP_ARCHIVE%" ^
-  -WorkDir "%~dp0WORK"
+  -WorkDir "%~dp0WORK" ^
+  -SkipPackBuild
 
 set HAP_EXIT=%ERRORLEVEL%
 echo.
