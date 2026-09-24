@@ -5,7 +5,7 @@ param(
   [Parameter(Mandatory=$true)]
   [string]$ResultsCsv,
 
-  [string]$OutputDir = ".\HAP\next_print_queue"
+  [string]$OutputDir = "./HAP/next_print_queue"
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,11 +22,11 @@ $definitions = @{
     start = "LEGO_D_0.00"
     larger_means = "TIGHTER"
     files = @{
-      "LEGO_D_m0.08" = "01_LEGO\CAL_LEGO_2x2_delta_m0.08.stl"
-      "LEGO_D_m0.04" = "01_LEGO\CAL_LEGO_2x2_delta_m0.04.stl"
-      "LEGO_D_0.00" = "01_LEGO\CAL_LEGO_2x2_delta_0.00.stl"
-      "LEGO_D_p0.04" = "01_LEGO\CAL_LEGO_2x2_delta_p0.04.stl"
-      "LEGO_D_p0.08" = "01_LEGO\CAL_LEGO_2x2_delta_p0.08.stl"
+      "LEGO_D_m0.08" = "01_LEGO/CAL_LEGO_2x2_delta_m0.08.stl"
+      "LEGO_D_m0.04" = "01_LEGO/CAL_LEGO_2x2_delta_m0.04.stl"
+      "LEGO_D_0.00" = "01_LEGO/CAL_LEGO_2x2_delta_0.00.stl"
+      "LEGO_D_p0.04" = "01_LEGO/CAL_LEGO_2x2_delta_p0.04.stl"
+      "LEGO_D_p0.08" = "01_LEGO/CAL_LEGO_2x2_delta_p0.08.stl"
     }
   }
   "GT_MALE" = [ordered]@{
@@ -34,11 +34,11 @@ $definitions = @{
     start = "GT_29.78"
     larger_means = "TIGHTER"
     files = @{
-      "GT_29.60" = "02_GT_MALE\CAL_GT_male_29.60.stl"
-      "GT_29.70" = "02_GT_MALE\CAL_GT_male_29.70.stl"
-      "GT_29.78" = "02_GT_MALE\CAL_GT_male_29.78.stl"
-      "GT_29.86" = "02_GT_MALE\CAL_GT_male_29.86.stl"
-      "GT_29.96" = "02_GT_MALE\CAL_GT_male_29.96.stl"
+      "GT_29.60" = "02_GT_MALE/CAL_GT_male_29.60.stl"
+      "GT_29.70" = "02_GT_MALE/CAL_GT_male_29.70.stl"
+      "GT_29.78" = "02_GT_MALE/CAL_GT_male_29.78.stl"
+      "GT_29.86" = "02_GT_MALE/CAL_GT_male_29.86.stl"
+      "GT_29.96" = "02_GT_MALE/CAL_GT_male_29.96.stl"
     }
   }
   "CORE_CLEARANCE" = [ordered]@{
@@ -46,21 +46,21 @@ $definitions = @{
     start = "CORE_0.30"
     larger_means = "LOOSER"
     files = @{
-      "CORE_0.20" = "03_CORE\CAL_CORE_SOCKET_0.20_v0.1.stl"
-      "CORE_0.30" = "03_CORE\CAL_CORE_SOCKET_0.30_v0.1.stl"
-      "CORE_0.40" = "03_CORE\CAL_CORE_SOCKET_0.40_v0.1.stl"
+      "CORE_0.20" = "03_CORE/CAL_CORE_SOCKET_0.20_v0.1.stl"
+      "CORE_0.30" = "03_CORE/CAL_CORE_SOCKET_0.30_v0.1.stl"
+      "CORE_0.40" = "03_CORE/CAL_CORE_SOCKET_0.40_v0.1.stl"
     }
-    reference = "03_CORE\HAP_GT_CORE_nominal_v0.1.stl"
+    reference = "03_CORE/HAP_GT_CORE_nominal_v0.1.stl"
   }
   "TECHNIC_HOLE" = [ordered]@{
     candidates = @("TECHNIC_4.80","TECHNIC_4.90","TECHNIC_5.00","TECHNIC_5.10")
     start = "TECHNIC_4.90"
     larger_means = "LOOSER"
     files = @{
-      "TECHNIC_4.80" = "04_TECHNIC\CAL_TECHNIC_HOLE_4.80_v0.1.stl"
-      "TECHNIC_4.90" = "04_TECHNIC\CAL_TECHNIC_HOLE_4.90_v0.1.stl"
-      "TECHNIC_5.00" = "04_TECHNIC\CAL_TECHNIC_HOLE_5.00_v0.1.stl"
-      "TECHNIC_5.10" = "04_TECHNIC\CAL_TECHNIC_HOLE_5.10_v0.1.stl"
+      "TECHNIC_4.80" = "04_TECHNIC/CAL_TECHNIC_HOLE_4.80_v0.1.stl"
+      "TECHNIC_4.90" = "04_TECHNIC/CAL_TECHNIC_HOLE_4.90_v0.1.stl"
+      "TECHNIC_5.00" = "04_TECHNIC/CAL_TECHNIC_HOLE_5.00_v0.1.stl"
+      "TECHNIC_5.10" = "04_TECHNIC/CAL_TECHNIC_HOLE_5.10_v0.1.stl"
     }
   }
   "NATIVE_CONNECTOR" = [ordered]@{
@@ -68,11 +68,11 @@ $definitions = @{
     start = "NATIVE_1.000"
     larger_means = "TIGHTER"
     files = @{
-      "NATIVE_0.996" = "05_NATIVE\HAP_NATIVE_CONNECTOR_ONLY_scale_0.996_v0.1.stl"
-      "NATIVE_0.998" = "05_NATIVE\HAP_NATIVE_CONNECTOR_ONLY_scale_0.998_v0.1.stl"
-      "NATIVE_1.000" = "05_NATIVE\HAP_NATIVE_CONNECTOR_ONLY_scale_1.000_v0.1.stl"
-      "NATIVE_1.002" = "05_NATIVE\HAP_NATIVE_CONNECTOR_ONLY_scale_1.002_v0.1.stl"
-      "NATIVE_1.004" = "05_NATIVE\HAP_NATIVE_CONNECTOR_ONLY_scale_1.004_v0.1.stl"
+      "NATIVE_0.996" = "05_NATIVE/HAP_NATIVE_CONNECTOR_ONLY_scale_0.996_v0.1.stl"
+      "NATIVE_0.998" = "05_NATIVE/HAP_NATIVE_CONNECTOR_ONLY_scale_0.998_v0.1.stl"
+      "NATIVE_1.000" = "05_NATIVE/HAP_NATIVE_CONNECTOR_ONLY_scale_1.000_v0.1.stl"
+      "NATIVE_1.002" = "05_NATIVE/HAP_NATIVE_CONNECTOR_ONLY_scale_1.002_v0.1.stl"
+      "NATIVE_1.004" = "05_NATIVE/HAP_NATIVE_CONNECTOR_ONLY_scale_1.004_v0.1.stl"
     }
   }
 }
