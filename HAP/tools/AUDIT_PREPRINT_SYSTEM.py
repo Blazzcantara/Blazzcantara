@@ -112,8 +112,24 @@ def main():
 
     stud_d=number_from_source(master_lego,"LEGO_STUD_D")
     stud_h=number_from_source(master_lego,"LEGO_STUD_H")
+    lego_roof=number_from_source(master_lego,"LEGO_ROOF")
     assert_close(stud_d,4.80,"LEGO stud diameter",1e-9)
     assert_close(stud_h,1.80,"LEGO stud height",1e-9)
+
+    tube_wall=(INTERFACE_EXPECTED["tube_od"]-INTERFACE_EXPECTED["tube_id"])/2.0
+    max_roof_bridge=max(
+        INTERFACE_EXPECTED["pitch"]-INTERFACE_EXPECTED["tube_od"],
+        ((2*INTERFACE_EXPECTED["pitch"]-0.20)-2*INTERFACE_EXPECTED["wall"])/2.0
+        - INTERFACE_EXPECTED["tube_od"]/2.0
+    )
+    if INTERFACE_EXPECTED["wall"] < 1.20:
+        raise AssertionError("Structural outer wall below 1.20 mm pre-print guard.")
+    if lego_roof < 0.80:
+        raise AssertionError("Structural roof below 0.80 mm pre-print guard.")
+    if tube_wall < 0.80:
+        raise AssertionError("Structural anti-stud tube wall below 0.80 mm pre-print guard.")
+    if max_roof_bridge > 4.00:
+        raise AssertionError(f"Structural roof bridge span too large: {max_roof_bridge:.2f} mm")
 
     actual_hap=sorted(p.name for p in out.glob("*.stl") if p.name in HAP_EXPECTED)
     if actual_hap!=sorted(HAP_EXPECTED):
@@ -127,12 +143,31 @@ def main():
             if token in upper: raise AssertionError(f"Forbidden token {token} in print candidate {name}")
         stl=out/name
         geo=audit_geometry_json(hap_audit/(stl.stem+".json"),name)
+        orientation="DEFAULT_FLAT_BASE_DOWN"
+        risk="NORMAL"
+        if name in {
+            "HAP_DONOR_CORE_MOUNT_v0.1.stl",
+            "HAP_DONOR_UNDERBODY_HEX_v0.1.stl",
+            "HAP_DONOR_UNDERBODY_HEX_REINFORCED_v0.1.stl",
+            "HAP_DONOR_UNDERBODY_RECT_v0.1.stl",
+        }:
+            orientation="ROTATE_180_PAD_ON_BED_CORE_UP"
+            risk="ORIENTATION_REQUIRED"
+            warnings.append(f"{name}: standalone STL should be rotated 180 degrees so the broad donor pad is on the bed and the HAP core points upward.")
+        elif "DONOR_PAD_" in name:
+            orientation="DONOR_PAD_FLAT_BASE_DOWN"
+        elif name.startswith("HAP_GT_CORE"):
+            orientation="CORE_FLAT_BASE_DOWN"
+        elif any(token in name for token in ("LG","FULL_HEX","SKY","BRIDGE","DUAL_FOOT","CROSS_OUTRIGGER")):
+            orientation="LEGO_OPEN_CAVITY_DOWN_GRAVITRAX_SIDE_UP"
+
         rows.append({
             "family":"HAP","file":name,"path":stl.relative_to(root).as_posix(),
             "sha256":sha256(stl),"size_bytes":stl.stat().st_size,"triangles":geo.get("triangles"),
             "bbox_x_mm":geo["bbox_extent_mm"][0],"bbox_y_mm":geo["bbox_extent_mm"][1],"bbox_z_mm":geo["bbox_extent_mm"][2],
             "positive_shells":geo.get("positive_shells"),"watertight":geo.get("watertight_edge_test"),
-            "degenerate_triangles":geo.get("degenerate_triangle_count"),"risk":"NORMAL",
+            "degenerate_triangles":geo.get("degenerate_triangle_count"),"risk":risk,
+            "orientation":orientation,
         })
 
     structural_manifest=read_csv(structural_manifest_path)
@@ -174,6 +209,7 @@ def main():
             "bbox_x_mm":bx,"bbox_y_mm":by,"bbox_z_mm":bz,
             "positive_shells":geo.get("positive_shells"),"watertight":geo.get("watertight_edge_test"),
             "degenerate_triangles":geo.get("degenerate_triangle_count"),"risk":risk,
+            "orientation":"STUDS_UP_OPEN_ANTISTUD_CAVITY_DOWN",
         })
 
     if len(set(structural_names))!=25: raise AssertionError("Duplicate structural STL filename")
@@ -211,6 +247,13 @@ def main():
         "mesh_gate":{"positive_shells_exactly_one":True,"watertight":True,"zero_degenerate_triangles":True,"unique_sha256_payloads":True},
         "interface_parity":interface_actual,
         "lego_stud_d_mm":stud_d,"lego_stud_h_mm":stud_h,
+        "structural_printability_guard":{
+            "outer_wall_mm":INTERFACE_EXPECTED["wall"],
+            "roof_mm":lego_roof,
+            "tube_wall_mm":round(tube_wall,3),
+            "max_nominal_roof_bridge_mm":round(max_roof_bridge,3),
+            "support_free_geometry_guard":"PASS",
+        },
         "warnings":warnings,"physical_fit_sealed":False,
     }
     (pkg_root/"03_AUDIT"/"PREPRINT_AUDIT.json").write_text(json.dumps(summary,indent=2),encoding="utf-8")
@@ -234,6 +277,8 @@ def main():
         "- every selected mesh: zero degenerate triangles",
         "- 51/51 unique SHA-256 STL payloads",
         "- structural X/Y/Z bounding boxes match catalog dimensions",
+        "- structural wall/roof/tube and roof-bridge printability guards",
+        "- explicit per-part print orientation metadata",
         "- nominal 0.30 core socket only","",
         "## Physical limitation","",
         "Fit calibration was intentionally skipped. Digital PASS does not prove real LEGO clutch force, real GraviTrax fit, material shrinkage, or structural load.","",
