@@ -16,11 +16,13 @@ $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Registry = Join-Path $Root "donors\DONOR_REGISTRY_v0.1.csv"
 $Recipes = Join-Path $Root "donors\DONOR_RECIPES_v0.1.csv"
 $Converter = Join-Path $Root "cad\DONOR_CONVERTER_v0.1.scad"
+$AuditTool = Join-Path $Root "tools\STL_COMPONENT_AUDIT.py"
 
 if (-not (Test-Path $ArchivePath)) { throw "Archive not found: $ArchivePath" }
 if (-not (Test-Path $Registry)) { throw "Registry not found: $Registry" }
 if (-not (Test-Path $Recipes)) { throw "Recipe registry not found: $Recipes" }
 if (-not (Test-Path $Converter)) { throw "Converter not found: $Converter" }
+if (-not (Test-Path $AuditTool)) { throw "STL audit tool not found: $AuditTool" }
 
 $row = Import-Csv $Registry | Where-Object { $_.donor_id -eq $DonorId } | Select-Object -First 1
 if (-not $row) { throw "Unknown donor id: $DonorId" }
@@ -67,6 +69,20 @@ foreach ($c in $candidates) {
 
 if (-not $OpenSCAD) {
   throw "OpenSCAD not found. Install OpenSCAD first or run HAP\BUILD_ALL.ps1 once."
+}
+
+$Python = $null
+$PythonPrefix = @()
+foreach ($candidate in @("python","python3","py")) {
+  $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+  if ($cmd) {
+    $Python = $cmd.Source
+    if ($candidate -eq "py") { $PythonPrefix = @("-3") }
+    break
+  }
+}
+if (-not $Python) {
+  throw "Python 3 not found; required for donor STL geometry audit."
 }
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -127,6 +143,22 @@ try {
   if (-not (Test-Path $outFile)) { throw "Output STL missing: $outFile" }
   if ((Get-Item $outFile).Length -le 100) { throw "Output STL is suspiciously small." }
 
+  $geometryEvidence = Join-Path $OutputDir ("HAP_CONVERTED_" + $DonorId + "_v0.1_GEOMETRY.json")
+  $auditArgs = @()
+  $auditArgs += $PythonPrefix
+  $auditArgs += @(
+    $AuditTool,
+    $outFile,
+    "--json-out", $geometryEvidence,
+    "--expect-positive-shells", "1",
+    "--require-watertight",
+    "--require-no-degenerate"
+  )
+  & $Python @auditArgs
+  if ($LASTEXITCODE -ne 0) {
+    throw "Converted donor STL failed geometry audit."
+  }
+
   $attribution = @"
 HAP donor conversion receipt
 ============================
@@ -167,6 +199,8 @@ Reality state: GENERATED / NOT PHYSICALLY VALIDATED
     mount_z_mm = $mountZ
     mount_rotation_deg = $mountRot
     mode = $Mode
+    geometry_evidence_file = (Split-Path -Leaf $geometryEvidence)
+    geometry_state = "WATERTIGHT_SINGLE_POSITIVE_SOLID_NO_DEGENERATE"
     reality_state = "GENERATED_NOT_PHYSICALLY_VALIDATED"
   }
   $evidencePath = Join-Path $OutputDir ("HAP_CONVERTED_" + $DonorId + "_v0.1_EVIDENCE.json")
@@ -177,6 +211,7 @@ Reality state: GENERATED / NOT PHYSICALLY VALIDATED
   Write-Host "STL     : $outFile"
   Write-Host "Receipt : $receipt"
   Write-Host "Evidence: $evidencePath"
+  Write-Host "Geometry: $geometryEvidence"
 }
 finally {
   if (Test-Path $tempRoot) {
