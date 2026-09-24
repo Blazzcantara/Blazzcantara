@@ -563,13 +563,20 @@ jobs:
 
           pwsh -NoProfile -File HAP/SAVE_PHYSICAL_CHECKPOINT.ps1             -WorkDir "$WORK/STATE"             -CheckpointDir "$WORK/CHECKPOINTS"
 
-          CHECKPOINT_ZIP=$(find "$WORK/CHECKPOINTS" -maxdepth 1 -name 'checkpoint_*.zip' | head -n 1)
+          sleep 1
+
+          pwsh -NoProfile -File HAP/SAVE_PHYSICAL_CHECKPOINT.ps1             -WorkDir "$WORK/STATE"             -CheckpointDir "$WORK/CHECKPOINTS"
+
+          CHECKPOINT_COUNT=$(find "$WORK/CHECKPOINTS" -maxdepth 1 -name 'checkpoint_*.zip' | wc -l)
+          test "$CHECKPOINT_COUNT" -eq 2
+
+          CHECKPOINT_ZIP=$(find "$WORK/CHECKPOINTS" -maxdepth 1 -name 'checkpoint_*.zip' | sort | tail -n 1)
           test -n "$CHECKPOINT_ZIP"
 
           pwsh -NoProfile -File HAP/RESTORE_PHYSICAL_CHECKPOINT.ps1             -CheckpointZip "$CHECKPOINT_ZIP"             -RestoreDir "$WORK/RESTORED"
 
           test -f "$WORK/RESTORED/PHYSICAL_RESULTS_WORKING.csv"
-          echo "Checkpoint save/restore PASS"
+          echo "Repeated checkpoint save/restore PASS"
 
       - name: Package
         shell: bash
