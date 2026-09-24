@@ -386,6 +386,19 @@ Final STL count: 38
 "@
 Set-Content -Encoding ASCII -Path (Join-Path $Release "00_RELEASE\RELEASE_SEAL.txt") -Value $seal
 
+# Final distribution sums are generated after the audit receipt and release seal
+# exist. The checksum file excludes only itself, avoiding a circular hash.
+$finalSumsPath = Join-Path $Release "00_RELEASE\SHA256SUMS_FINAL.txt"
+$finalHashLines = Get-ChildItem $Release -Recurse -File |
+  Where-Object { $_.FullName -ne $finalSumsPath } |
+  Sort-Object FullName |
+  ForEach-Object {
+    $rel = $_.FullName.Substring($ReleaseResolved.Length).TrimStart([char[]]"\/")
+    $hash = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant()
+    "$hash  $rel"
+  }
+$finalHashLines | Set-Content -Encoding ASCII -Path $finalSumsPath
+
 $zipPath = Join-Path $OutputDir "HAP_FINAL_v1.0.0.zip"
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Compress-Archive -Path (Join-Path $Release "*") -DestinationPath $zipPath
@@ -393,6 +406,48 @@ Compress-Archive -Path (Join-Path $Release "*") -DestinationPath $zipPath
 $zipHash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash.ToLowerInvariant()
 "$zipHash  HAP_FINAL_v1.0.0.zip" |
   Set-Content -Encoding ASCII -Path (Join-Path $OutputDir "HAP_FINAL_v1.0.0.zip.sha256")
+
+# Distribution round-trip verification: re-extract the exact final ZIP and
+# verify every final checksum plus the final STL count.
+$verifyDir = Join-Path $OutputDir "_HAP_FINAL_VERIFY"
+if (Test-Path $verifyDir) { Remove-Item $verifyDir -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $verifyDir | Out-Null
+Expand-Archive -Path $zipPath -DestinationPath $verifyDir -Force
+
+$verifySums = Join-Path $verifyDir "00_RELEASE\SHA256SUMS_FINAL.txt"
+if (-not (Test-Path $verifySums)) {
+  throw "Round-trip verification failed: SHA256SUMS_FINAL.txt missing."
+}
+
+foreach ($line in (Get-Content $verifySums | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
+  if ($line -notmatch '^([0-9a-fA-F]{64})  (.+)
+Write-Host "PASS: HAP FINAL v1.0.0 generated" -ForegroundColor Green
+Write-Host "Final STLs: 38"
+Write-Host "ZIP: $zipPath"
+Write-Host "SHA256: $zipHash"
+) {
+    throw "Round-trip verification found malformed checksum line: $line"
+  }
+
+  $expected = $Matches[1].ToLowerInvariant()
+  $relative = $Matches[2]
+  $file = Join-Path $verifyDir $relative
+  if (-not (Test-Path $file)) {
+    throw "Round-trip verification missing file: $relative"
+  }
+
+  $actual = (Get-FileHash -Algorithm SHA256 $file).Hash.ToLowerInvariant()
+  if ($actual -ne $expected) {
+    throw "Round-trip verification hash mismatch: $relative"
+  }
+}
+
+$verifyStls = @(Get-ChildItem $verifyDir -Recurse -Filter "*.stl" -File)
+if ($verifyStls.Count -ne 38) {
+  throw "Round-trip verification expected 38 STL files, found $($verifyStls.Count)."
+}
+
+Remove-Item $verifyDir -Recurse -Force
 
 Write-Host ""
 Write-Host "PASS: HAP FINAL v1.0.0 generated" -ForegroundColor Green
