@@ -6,6 +6,16 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$PowerShellExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+  (Get-Command pwsh).Source
+}
+elseif (Get-Command powershell -ErrorAction SilentlyContinue) {
+  (Get-Command powershell).Source
+}
+else {
+  throw "PowerShell executable not found."
+}
+
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PackBuilder = Join-Path $Root "CREATE_CALIBRATION_PACK.ps1"
 $Template = Join-Path $Root "calibration\PHYSICAL_RESULTS_TEMPLATE_v0.1.csv"
@@ -30,7 +40,7 @@ $packArgs = @(
   "-ArchivePath", $ArchivePath,
   "-OutputDir", $PackOut
 )
-& powershell @packArgs
+& $PowerShellExe @packArgs
 if ($LASTEXITCODE -ne 0) { throw "Calibration pack build failed." }
 
 $packDir = Join-Path $PackOut "HAP_PHYSICAL_CALIBRATION_PACK_v0.1"
@@ -122,7 +132,7 @@ $queueArgs = @(
   "-ResultsCsv", (Join-Path $Stage "WORK\PHYSICAL_RESULTS_WORKING.csv"),
   "-OutputDir", (Join-Path $Stage "WORK\NEXT_PRINT_QUEUE")
 )
-& powershell @queueArgs
+& $PowerShellExe @queueArgs
 if ($LASTEXITCODE -ne 0) { throw "Initial next-print queue build failed." }
 
 $dashArgs = @(
@@ -132,7 +142,7 @@ $dashArgs = @(
   "-CalibrationResultsCsv", (Join-Path $Stage "WORK\PHYSICAL_RESULTS_WORKING.csv"),
   "-OutputDir", (Join-Path $Stage "WORK\DASHBOARD")
 )
-& powershell @dashArgs
+& $PowerShellExe @dashArgs
 if ($LASTEXITCODE -ne 0) { throw "Initial dashboard build failed." }
 
 $manifest = foreach ($file in (Get-ChildItem $Stage -Recurse -File | Sort-Object FullName)) {
