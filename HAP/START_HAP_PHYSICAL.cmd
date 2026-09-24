@@ -23,9 +23,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0RUN_PHYSICAL_CAMPAIGN.
   -SkipPackBuild
 
 set HAP_EXIT=%ERRORLEVEL%
+
+if "%HAP_EXIT%"=="0" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0REFRESH_PHYSICAL_WORKBENCH.ps1" -WorkbenchDir "%~dp0"
+)
+
 echo.
 if "%HAP_EXIT%"=="0" (
   echo Workbench finished without a script error.
+  echo Next-print queue and dashboard were refreshed.
 ) else (
   echo Workbench returned exit code %HAP_EXIT%.
 )
