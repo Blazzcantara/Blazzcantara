@@ -3,6 +3,15 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$PowerShellExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+  (Get-Command pwsh).Source
+}
+elseif (Get-Command powershell -ErrorAction SilentlyContinue) {
+  (Get-Command powershell).Source
+}
+else {
+  throw "PowerShell executable not found."
+}
 
 $Root = (Resolve-Path $WorkbenchDir).Path
 $ResultsCsv = Join-Path $Root "WORK\PHYSICAL_RESULTS_WORKING.csv"
@@ -25,7 +34,7 @@ $queueArgs = @(
   "-ResultsCsv", $ResultsCsv,
   "-OutputDir", $queueOut
 )
-& powershell @queueArgs
+& $PowerShellExe @queueArgs
 if ($LASTEXITCODE -ne 0) { throw "Next print queue refresh failed." }
 
 $pilot = Join-Path $Root "WORK\PILOT_RESULTS_WORKING.csv"
@@ -44,7 +53,7 @@ if (Test-Path $pilot) { $dashArgs += @("-PilotResultsCsv",$pilot) }
 if (Test-Path $structural) { $dashArgs += @("-StructuralResultsCsv",$structural) }
 if (Test-Path $show) { $dashArgs += @("-ShowResultsCsv",$show) }
 
-& powershell @dashArgs
+& $PowerShellExe @dashArgs
 if ($LASTEXITCODE -ne 0) { throw "Physical dashboard refresh failed." }
 
 Write-Host ""
