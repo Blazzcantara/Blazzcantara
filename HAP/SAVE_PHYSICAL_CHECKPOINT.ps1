@@ -17,7 +17,7 @@ $stamp = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ")
 $stage = Join-Path $CheckpointDir ("checkpoint_" + $stamp)
 New-Item -ItemType Directory -Force -Path $stage | Out-Null
 
-$WorkResolved = $WorkResolved
+$WorkResolved = (Resolve-Path $WorkDir).Path
 $StageResolved = (Resolve-Path $stage).Path
 
 $patterns = @(
