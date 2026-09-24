@@ -101,8 +101,8 @@ def main():
         "No separate real top-stud physical gate exists because the direct-print path intentionally skipped fit calibration."
     )
     warnings.append(
-        "The new 25-part LEGO Structural Pack is a v0.2 pre-print add-on. The older HAP_FINAL_v1.0.0 builder still seals the "
-        "original 38-part scope and does not yet claim these 25 parts as physically released."
+        "The new 29-part LEGO Structural Pack is a v0.2 pre-print add-on. The older HAP_FINAL_v1.0.0 builder still seals the "
+        "original 38-part scope and does not yet claim these 29 parts as physically released."
     )
 
     pairs={
@@ -182,10 +182,10 @@ def main():
 
     structural_manifest=read_csv(structural_manifest_path)
     catalog=read_csv(catalog_path)
-    if len(structural_manifest)!=25: raise AssertionError(f"Structural manifest expected 25 rows, got {len(structural_manifest)}")
-    if len(catalog)!=25: raise AssertionError(f"Structural catalog expected 25 rows, got {len(catalog)}")
+    if len(structural_manifest)!=29: raise AssertionError(f"Structural manifest expected 29 rows, got {len(structural_manifest)}")
+    if len(catalog)!=29: raise AssertionError(f"Structural catalog expected 29 rows, got {len(catalog)}")
     by_selector={r["selector"]:r for r in catalog}
-    if len(by_selector)!=25: raise AssertionError("Structural catalog contains duplicate selector values")
+    if len(by_selector)!=29: raise AssertionError("Structural catalog contains duplicate selector values")
 
     structural_names=[]
     for mr in structural_manifest:
@@ -222,16 +222,54 @@ def main():
             "orientation":"STUDS_UP_OPEN_ANTISTUD_CAVITY_DOWN",
         })
 
-    if len(set(structural_names))!=25: raise AssertionError("Duplicate structural STL filename")
-    if len(rows)!=51: raise AssertionError(f"Pre-print set expected 51 STL, got {len(rows)}")
+    if len(set(structural_names))!=29: raise AssertionError("Duplicate structural STL filename")
+    if len(rows)!=55: raise AssertionError(f"Pre-print set expected 55 STL, got {len(rows)}")
     hashes=[r["sha256"] for r in rows]
-    if len(set(hashes))!=51: raise AssertionError("Duplicate STL payload SHA-256 values found")
+    if len(set(hashes))!=55: raise AssertionError("Duplicate STL payload SHA-256 values found")
     basenames=[r["file"] for r in rows]
-    if len(set(basenames))!=51: raise AssertionError("Duplicate STL basenames across combined print set")
+    if len(set(basenames))!=55: raise AssertionError("Duplicate STL basenames across combined print set")
     if "HAP_FULL_HEX_6x6_socket_0.30_v0.1.stl" not in basenames: raise AssertionError("Nominal 0.30 core socket missing")
     if any("_socket_0.20_" in n or "_socket_0.40_" in n for n in basenames): raise AssertionError("Non-nominal full-hex socket leaked into direct-print set")
     if any("TECHNIC" in n.upper() for n in basenames): raise AssertionError("Technic leaked into no-Technic pre-print set")
     if any(n.startswith("CAL_") for n in basenames): raise AssertionError("Calibration coupon leaked into direct-print set")
+
+    # 5b. Exact LEGO-grid parity between HAP S32/S40 supports and printable underbuild.
+    required_parity_parts = {
+        "HAP_LEGO_PLATE_7x2_v0.1.stl",
+        "HAP_LEGO_PLATE_7x7_v0.1.stl",
+        "HAP_LEGO_FOUNDATION_7x7_H1_v0.1.stl",
+        "HAP_LEGO_BRIDGE_SUPPORT_10x4_H3_v0.1.stl",
+    }
+    missing_parity = sorted(required_parity_parts - set(basenames))
+    if missing_parity:
+        raise AssertionError(f"Missing structural grid-parity closure parts: {missing_parity}")
+
+    def centered_studs(n):
+        return [round((i-(n-1)/2.0)*8.0, 6) for i in range(n)]
+
+    s32_required = {-20.0,-12.0,12.0,20.0}
+    s40_required = {-24.0,-16.0,16.0,24.0}
+    grid6 = set(centered_studs(6))
+    grid7 = set(centered_studs(7))
+    grid10 = set(centered_studs(10))
+
+    if not s32_required.issubset(grid6):
+        raise AssertionError(f"S32 dual-foot studs do not align to centered 6-wide grid: {sorted(grid6)}")
+    if not s40_required.issubset(grid7):
+        raise AssertionError(f"S40 dual-foot studs do not align to centered 7-wide grid: {sorted(grid7)}")
+    if s40_required.issubset(grid6):
+        raise AssertionError("Audit assumption invalid: S40 unexpectedly aligns to centered 6-wide grid.")
+    if not ({-24.0,-16.0,16.0,24.0}.issubset(grid7)):
+        raise AssertionError("S40 cross-outrigger X/Y feet do not align to the 7x7 support grid.")
+    if len(grid10) != 10 or min(grid10) != -36.0 or max(grid10) != 36.0:
+        raise AssertionError(f"10-wide bridge support grid is not centered as expected: {sorted(grid10)}")
+
+    grid_parity = {
+        "S32_dual_foot_to_centered_6wide": "PASS",
+        "S40_dual_foot_to_centered_7wide": "PASS",
+        "S40_cross_outrigger_to_7x7": "PASS",
+        "10x4_bridge_to_10x4_support": "PASS",
+    }
 
     pkg_root=report_dir/"HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2"
     (pkg_root/"01_HAP").mkdir(parents=True)
@@ -250,9 +288,9 @@ def main():
     summary={
         "audit_version":"0.2",
         "reality_state":"DIGITAL_PREPRINT_AUDIT_PASS_PHYSICAL_FIT_PENDING",
-        "public_regenerable_stl_count":51,
+        "public_regenerable_stl_count":55,
         "hap_nominal_stl_count":26,
-        "lego_structural_stl_count":25,
+        "lego_structural_stl_count":29,
         "native_real_stl_count_not_in_public_package":2,
         "mesh_gate":{"positive_shells_exactly_one":True,"watertight":True,"zero_degenerate_triangles":True,"zero_near_zero_shells":True,"positive_net_volume":True,"unique_sha256_payloads":True},
         "interface_parity":interface_actual,
@@ -264,8 +302,9 @@ def main():
             "max_nominal_roof_bridge_mm":round(max_roof_bridge,3),
             "support_free_geometry_guard":"PASS",
         },
+        "grid_parity_closure":grid_parity,
         "printed_top_stud_fit_state":"NOMINAL_4.80_STUD_DELTA_0.00_PHYSICAL_GATE_SKIPPED",
-        "final_release_scope_note":"HAP_FINAL_v1.0.0 remains the original 38-part physically-gated scope; LEGO Structural Pack is v0.2 pre-print add-on.",
+        "final_release_scope_note":"HAP_FINAL_v1.0.0 remains the original 38-part physically-gated scope; LEGO Structural Pack is a 29-part v0.2 pre-print add-on.",
         "warnings":warnings,"physical_fit_sealed":False,
     }
     (pkg_root/"03_AUDIT"/"PREPRINT_AUDIT.json").write_text(json.dumps(summary,indent=2),encoding="utf-8")
@@ -276,8 +315,8 @@ def main():
         "Reality state: DIGITAL_PREPRINT_AUDIT_PASS_PHYSICAL_FIT_PENDING","",
         "## Audited print inventory","",
         "- 26 nominal HAP non-Technic production candidates",
-        "- 25 LEGO-compatible structural parts",
-        "- 51 public/regenerable STL files total",
+        "- 29 LEGO-compatible structural parts",
+        "- 55 public/regenerable STL files total",
         "- 2 real native donor-derived STL files remain a separate addendum","",
         "## Passed checks","",
         "- exact inventory and no-Technic/no-calibration selection",
@@ -287,10 +326,11 @@ def main():
         "- every selected mesh: exactly one positive shell",
         "- every selected mesh: watertight",
         "- every selected mesh: zero degenerate triangles",
-        "- 51/51 unique SHA-256 STL payloads",
+        "- 55/55 unique SHA-256 STL payloads",
         "- structural X/Y/Z bounding boxes match catalog dimensions",
         "- structural wall/roof/tube and roof-bridge printability guards",
         "- explicit per-part print orientation metadata",
+        "- exact S32/S40/10x4 LEGO-grid support parity closure",
         "- nominal 0.30 core socket only","",
         "## Physical limitation","",
         "Fit calibration was intentionally skipped. Digital PASS does not prove real LEGO clutch force, real GraviTrax fit, material shrinkage, or structural load.","",
