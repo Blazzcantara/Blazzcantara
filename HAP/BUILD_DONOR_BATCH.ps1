@@ -10,6 +10,17 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+$PowerShellExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+  (Get-Command pwsh).Source
+}
+elseif (Get-Command powershell -ErrorAction SilentlyContinue) {
+  (Get-Command powershell).Source
+}
+else {
+  throw "PowerShell executable not found."
+}
+
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RegistryPath = Join-Path $Root "donors\\DONOR_REGISTRY_v0.1.csv"
 $RecipePath = Join-Path $Root "donors\\DONOR_RECIPES_v0.1.csv"
@@ -41,6 +52,20 @@ $ready = foreach ($row in $registry) {
 if (-not $ready) { throw "No conversion-ready donor IDs selected." }
 
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
+
+if (-not $DryRun) {
+  # Clear stale deterministic batch outputs so a subset run cannot accidentally
+  # package files left by an earlier broader conversion.
+  Write-Host "Clear stale deterministic batch outputs ..." -ForegroundColor DarkGray
+  Get-ChildItem $OutputDir -File -ErrorAction SilentlyContinue |
+    Where-Object {
+      $_.Name -like "HAP_CONVERTED_*" -or
+      $_.Name -like "DONOR_BATCH_*" -or
+      $_.Name -eq "SHA256SUMS.txt" -or
+      $_.Name -eq "HAP_DONOR_BATCH_v0.1.zip"
+    } |
+    Remove-Item -Force
+}
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $ArchivePath))
@@ -101,7 +126,7 @@ foreach ($item in ($ready | Sort-Object { [int]$_.recipe.rolling_test_order })) 
     "-OutputDir", $OutputDir,
     "-Mode", "FUSED"
   )
-  & powershell @singleArgs
+  & $PowerShellExe @singleArgs
 
   if ($LASTEXITCODE -ne 0) {
     throw "Conversion failed for $id"
