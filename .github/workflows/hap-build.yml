@@ -290,10 +290,10 @@ jobs:
           $fullCount = (Get-ChildItem "./HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1" -Recurse -Filter "*.stl" -File).Count
           $starterCount = (Get-ChildItem "./HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1" -Recurse -Filter "*.stl" -File).Count
 
-          if ($fullCount -ne 25) { throw "Expected 25 full structural STLs, found $fullCount." }
-          if ($starterCount -ne 12) { throw "Expected 12 starter STLs, found $starterCount." }
+          if ($fullCount -ne 29) { throw "Expected 29 full structural STLs, found $fullCount." }
+          if ($starterCount -ne 15) { throw "Expected 15 starter STLs, found $starterCount." }
 
-          Write-Host "LEGO Structural Pack PASS: 25 full / 12 starter" -ForegroundColor Green
+          Write-Host "LEGO Structural Pack PASS: 29 full / 15 starter" -ForegroundColor Green
 
       - name: Full pre-print system audit
         shell: bash
@@ -305,7 +305,7 @@ jobs:
           test -f HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/03_AUDIT/PREPRINT_MANIFEST.csv
 
           COUNT=$(find HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2 -name '*.stl' | wc -l)
-          test "$COUNT" -eq 51
+          test "$COUNT" -eq 55
 
           (
             cd HAP/preprint_audit_out
@@ -321,7 +321,7 @@ jobs:
 
           VERIFY_ROOT="HAP/preprint_audit_out/_roundtrip/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2"
           VERIFY_COUNT=$(find "$VERIFY_ROOT" -name '*.stl' | wc -l)
-          test "$VERIFY_COUNT" -eq 51
+          test "$VERIFY_COUNT" -eq 55
           (
             cd "$VERIFY_ROOT"
             sha256sum -c SHA256SUMS.txt
