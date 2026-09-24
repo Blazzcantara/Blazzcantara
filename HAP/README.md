@@ -358,3 +358,21 @@ Fit-critical interfaces remain provisional:
 - Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
 - Snake donor: HOLD_LICENSE
 - Actual printed donor derivatives: NOT YET PHYSICALLY VALIDATED
+
+
+## Digital STL deliverable
+
+The clean digital geometry deliverable is generated only after the complete
+47-part mesh gate succeeds:
+
+    HAP_DIGITAL_STL_SET_v0.1.zip
+
+It contains all 47 current STL candidates grouped as 17 calibration, 13 core /
+adapter, 11 structural and 6 donor-mount files, plus SHA-256 manifest and
+per-file geometry evidence.
+
+Its reality state is DIGITAL_GEOMETRY_PASS_PHYSICAL_PENDING. It is the finished
+digital STL set, not a substitute for the later physically sealed
+HAP_FINAL_v1.0.0 release.
+
+See DEEP_AUDIT_REPORT_v0.1.md for the final pre-physical defect and fix audit.
