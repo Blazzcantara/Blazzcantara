@@ -126,7 +126,7 @@ $expectedCounts = @{
 foreach ($category in $expectedCounts.Keys) {
   $actual = @($manifest | Where-Object { $_.category -eq $category }).Count
   if ($actual -ne $expectedCounts[$category]) {
-    throw "Unexpected category count for $category: expected $($expectedCounts[$category]), found $actual."
+    throw "Unexpected category count for ${category}: expected $($expectedCounts[$category]), found $actual."
   }
 }
 
