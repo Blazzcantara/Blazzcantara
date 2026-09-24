@@ -151,6 +151,14 @@ if ($manifest.Count -ne 38) {
   throw "Expected 38 manifest rows, found $($manifest.Count)."
 }
 
+$expectedValidationScope = @{
+  "01_CORE_ADAPTERS" = "INTERFACE_PHYSICALLY_SELECTED_GEOMETRY_AUDITED"
+  "02_STRUCTURAL" = "STRUCTURAL_PHYSICAL_PASS"
+  "03_NATIVE_CONNECTOR" = "PHYSICAL_INTERFACE_AND_PILOT_PASS"
+  "04_SHOW_MODULES" = "ROLLING_PHYSICAL_PASS"
+  "05_FALLBACK_DONOR_MOUNTS" = "DIGITAL_GEOMETRY_PASS_FALLBACK_NOT_DONOR_SPECIFIC_PHYSICAL"
+}
+
 foreach ($row in $manifest) {
   $path = Join-Path $ReleaseDir $row.relative_path
   if (-not (Test-Path $path)) { throw "Manifest file missing: $($row.relative_path)" }
@@ -158,6 +166,13 @@ foreach ($row in $manifest) {
   $actual = (Get-FileHash -Algorithm SHA256 $path).Hash.ToLowerInvariant()
   if ($actual -ne $row.sha256.ToLowerInvariant()) {
     throw "Manifest hash mismatch: $($row.relative_path)"
+  }
+
+  if (-not $expectedValidationScope.ContainsKey($row.category)) {
+    throw "Manifest contains an unexpected STL category: $($row.category)"
+  }
+  if ($row.validation_scope -ne $expectedValidationScope[$row.category]) {
+    throw "Manifest validation scope mismatch: $($row.relative_path)"
   }
 }
 
@@ -196,6 +211,7 @@ $receipt = [ordered]@{
   distribution = $expectedStlDistribution
   show_module_ids = $expectedShowIds
   donor_documentation = "PASS"
+  validation_scope = "PASS"
   manifest_rows = $manifest.Count
   sha256sum_entries = $sumLines.Count
   evidence_linkage = "PASS"
