@@ -17,15 +17,20 @@ $Progress = Join-Path $Root "CHECK_PHYSICAL_PROGRESS.ps1"
 $Sealer = Join-Path $Root "SEAL_PHYSICAL_PROFILE.ps1"
 $PilotBuilder = Join-Path $Root "BUILD_PHYSICAL_PILOT.ps1"
 
-foreach ($required in @(
+$requiredFiles = @(
   $ArchivePath,
-  $CreatePack,
   $Template,
   $Advisor,
   $Progress,
   $Sealer,
   $PilotBuilder
-)) {
+)
+
+if (-not $SkipPackBuild) {
+  $requiredFiles += $CreatePack
+}
+
+foreach ($required in $requiredFiles) {
   if (-not (Test-Path $required)) {
     throw "Required file not found: $required"
   }
