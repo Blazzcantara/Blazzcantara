@@ -21,7 +21,7 @@ if ((Test-Path $RestoreDir) -and -not $Overwrite) {
   }
 }
 
-if (Test-Path $RestoreDir -and $Overwrite) {
+if ((Test-Path $RestoreDir) -and $Overwrite) {
   Remove-Item $RestoreDir -Recurse -Force
 }
 New-Item -ItemType Directory -Force -Path $RestoreDir | Out-Null
