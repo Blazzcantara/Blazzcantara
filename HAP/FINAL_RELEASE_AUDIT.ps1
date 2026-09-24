@@ -58,6 +58,22 @@ if ($show.reality_state -ne "SHOW_MODULES_PHYSICAL_PASS") {
   throw "Show receipt state is not release-eligible: $($show.reality_state)"
 }
 
+$profileHash = (Get-FileHash -Algorithm SHA256 $profilePath).Hash.ToLowerInvariant()
+$pilotHash = (Get-FileHash -Algorithm SHA256 $pilotPath).Hash.ToLowerInvariant()
+
+if ($pilot.physical_profile_sha256 -ne $profileHash) {
+  throw "Pilot receipt linkage to physical profile is invalid."
+}
+if ($structural.physical_profile_sha256 -ne $profileHash) {
+  throw "Structural receipt linkage to physical profile is invalid."
+}
+if ($show.physical_profile_sha256 -ne $profileHash) {
+  throw "Show receipt linkage to physical profile is invalid."
+}
+if ($show.pilot_receipt_sha256 -ne $pilotHash) {
+  throw "Show receipt linkage to pilot receipt is invalid."
+}
+
 $stls = @(Get-ChildItem $ReleaseDir -Recurse -Filter "*.stl" -File)
 if ($stls.Count -ne 38) {
   throw "Expected 38 final STL files, found $($stls.Count)."
@@ -106,31 +122,7 @@ if ($sumLines.Count -lt 38) {
 }
 
 foreach ($line in $sumLines) {
-  if ($line -notmatch '^([0-9a-fA-F]{64})  (.+)
-  receipt_version = "1.0"
-  reality_state = "FINAL_AUDIT_PASS"
-  generated_utc = [DateTime]::UtcNow.ToString("o")
-  final_stl_count = $stls.Count
-  manifest_rows = $manifest.Count
-  sha256sum_entries = $sumLines.Count
-  evidence_linkage = "PASS"
-  evidence_states = [ordered]@{
-    physical_profile = $profile.reality_state
-    pilot = $pilot.reality_state
-    structural = $structural.reality_state
-    show_modules = $show.reality_state
-  }
-}
-
-$parent = Split-Path -Parent $OutputJson
-if ($parent) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
-
-$receipt | ConvertTo-Json -Depth 6 | Set-Content -Encoding UTF8 -Path $OutputJson
-
-Write-Host "PASS: final release audit" -ForegroundColor Green
-Write-Host "Final STLs: $($stls.Count)"
-Write-Host "Receipt: $OutputJson"
-) {
+  if ($line -notmatch '^([0-9a-fA-F]{64})  (.+)$') {
     throw "Malformed SHA256SUMS line: $line"
   }
 
@@ -148,28 +140,14 @@ Write-Host "Receipt: $OutputJson"
   }
 }
 
-$profileHash = (Get-FileHash -Algorithm SHA256 $profilePath).Hash.ToLowerInvariant()
-$pilotHash = (Get-FileHash -Algorithm SHA256 $pilotPath).Hash.ToLowerInvariant()
-
-if ($pilot.physical_profile_sha256 -ne $profileHash) {
-  throw "Pilot receipt linkage to physical profile is invalid."
-}
-if ($structural.physical_profile_sha256 -ne $profileHash) {
-  throw "Structural receipt linkage to physical profile is invalid."
-}
-if ($show.physical_profile_sha256 -ne $profileHash) {
-  throw "Show receipt linkage to physical profile is invalid."
-}
-if ($show.pilot_receipt_sha256 -ne $pilotHash) {
-  throw "Show receipt linkage to pilot receipt is invalid."
-}
-
 $receipt = [ordered]@{
   receipt_version = "1.0"
   reality_state = "FINAL_AUDIT_PASS"
   generated_utc = [DateTime]::UtcNow.ToString("o")
   final_stl_count = $stls.Count
   manifest_rows = $manifest.Count
+  sha256sum_entries = $sumLines.Count
+  evidence_linkage = "PASS"
   evidence_states = [ordered]@{
     physical_profile = $profile.reality_state
     pilot = $pilot.reality_state
