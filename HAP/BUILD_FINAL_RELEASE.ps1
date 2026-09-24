@@ -18,6 +18,17 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+$PowerShellExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+  (Get-Command pwsh).Source
+}
+elseif (Get-Command powershell -ErrorAction SilentlyContinue) {
+  (Get-Command powershell).Source
+}
+else {
+  throw "PowerShell executable not found."
+}
+
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Cad = Join-Path $Root "cad\HAP_MASTER_v0.1.scad"
 $NativeBuilder = Join-Path $Root "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
@@ -117,6 +128,8 @@ foreach ($dir in $dirs) {
 }
 New-Item -ItemType Directory -Force -Path $NativeTemp | Out-Null
 
+$ReleaseResolved = (Resolve-Path $Release).Path
+
 function Build-FinalPart {
   param(
     [string]$RelativeDir,
@@ -192,7 +205,7 @@ foreach ($nativeMode in @("CONNECTOR_ONLY","CORE_BRIDGE")) {
     "-Scales", $nativeScale,
     "-Modes", $nativeMode
   )
-  & powershell @nativeArgs
+  & $PowerShellExe @nativeArgs
   if ($LASTEXITCODE -ne 0) { throw "Native final build failed for $nativeMode." }
 }
 
@@ -327,7 +340,7 @@ if ($stls.Count -ne 38) {
 }
 
 $manifest = foreach ($file in $stls) {
-  $relative = $file.FullName.Substring($Release.Length).TrimStart([char[]]"\/")
+  $relative = $file.FullName.Substring($ReleaseResolved.Length).TrimStart([char[]]"\/")
   [pscustomobject]@{
     relative_path = $relative
     size_bytes = $file.Length
@@ -354,7 +367,7 @@ $auditArgs = @(
   "-File", $FinalAudit,
   "-ReleaseDir", $Release
 )
-& powershell @auditArgs
+& $PowerShellExe @auditArgs
 if ($LASTEXITCODE -ne 0) { throw "Final release audit failed." }
 
 $auditReceipt = Join-Path $Release "00_RELEASE\FINAL_AUDIT_RECEIPT.json"
