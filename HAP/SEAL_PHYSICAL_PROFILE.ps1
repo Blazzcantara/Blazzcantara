@@ -20,7 +20,8 @@ if (-not $rows) {
 
 $requiredColumns = @(
   "gate","candidate_id","parameter","value","unit",
-  "result","tested_real","force_rating","wobble_rating","notes"
+  "result","tested_real","force_rating","wobble_rating","notes",
+  "fit_direction","tested_utc"
 )
 
 foreach ($column in $requiredColumns) {
@@ -83,6 +84,27 @@ foreach ($gate in $gateOrder) {
     if ([string]::IsNullOrWhiteSpace($winner.notes)) {
       throw "Gate $gate winner requires a physical-test note."
     }
+
+    if ($winner.fit_direction -ne "GOOD") {
+      throw "Gate $gate winner must use fit_direction=GOOD."
+    }
+
+    $force = 0
+    $wobble = 0
+    if (-not [int]::TryParse($winner.force_rating,[ref]$force) -or $force -lt 1 -or $force -gt 5) {
+      throw "Gate $gate winner requires force_rating 1-5."
+    }
+    if (-not [int]::TryParse($winner.wobble_rating,[ref]$wobble) -or $wobble -lt 1 -or $wobble -gt 5) {
+      throw "Gate $gate winner requires wobble_rating 1-5."
+    }
+
+    $testedUtc = [DateTime]::MinValue
+    if (
+      [string]::IsNullOrWhiteSpace($winner.tested_utc) -or
+      -not [DateTime]::TryParse($winner.tested_utc,[ref]$testedUtc)
+    ) {
+      throw "Gate $gate winner requires a valid tested_utc timestamp."
+    }
   }
 
   $selected[$gate] = [ordered]@{
@@ -97,6 +119,8 @@ foreach ($gate in $gateOrder) {
     force_rating = $winner.force_rating
     wobble_rating = $winner.wobble_rating
     notes = $winner.notes
+    fit_direction = $winner.fit_direction
+    tested_utc = $winner.tested_utc
   }
 }
 
