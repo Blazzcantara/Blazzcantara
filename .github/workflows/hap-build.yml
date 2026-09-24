@@ -315,6 +315,20 @@ jobs:
           test -s HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip
           sha256sum HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip             > HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip.sha256
 
+          rm -rf HAP/preprint_audit_out/_roundtrip
+          mkdir -p HAP/preprint_audit_out/_roundtrip
+          unzip -q HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip -d HAP/preprint_audit_out/_roundtrip
+
+          VERIFY_ROOT="HAP/preprint_audit_out/_roundtrip/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2"
+          VERIFY_COUNT=$(find "$VERIFY_ROOT" -name '*.stl' | wc -l)
+          test "$VERIFY_COUNT" -eq 51
+          (
+            cd "$VERIFY_ROOT"
+            sha256sum -c SHA256SUMS.txt
+          )
+          rm -rf HAP/preprint_audit_out/_roundtrip
+          echo "Pre-print ZIP round-trip + checksum verification PASS"
+
       - name: Validate donor registry and recipes
         shell: bash
         run: |
