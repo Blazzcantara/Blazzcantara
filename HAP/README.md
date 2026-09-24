@@ -288,6 +288,14 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - structural pack is now 29 parts; curated starter pack is 15 parts
 - public/regenerable no-Technic pre-print set is now 55 STL before the separate two-part native addendum
 
+### HAP-047 — Print Master Reconciliation
+- complete print-kit builder updated from the old 51/53 scope to 55/57 STL
+- private nominal native addendum is accepted only when both 1.000 STL SHA-256 values match the audited identities
+- print orientation/risk metadata is generated for donor and tall-tower parts
+- high-slender H10 tower is removed from the starter pack; stable 4x4 H5 is used instead
+- FIRST_PROOF recipe provides a low-cost real assembly before large-volume printing
+- CI builds and publishes the corrected 55-STL public print master
+
 ## Current automated build
 
 Expected core output: **47 STL files** plus synthetic donor/native-connector smoke outputs.
@@ -320,7 +328,7 @@ Fit-critical interfaces remain provisional:
 6. Select the best native removable-connector scale.
 7. Record exactly one real PASS per gate in the physical-results CSV.
 8. Seal the physical interface profile.
-9. Build the six-part sealed-value physical pilot package.
+9. Build the six-part selected-value physical pilot package.
 10. Pilot the native bridge on Straight, Large Curve and S-Curve.
 11. Perform static rigidity checks on Sky / Bridge / Outrigger supports.
 12. Only after the pilot passes promote Crossing, Spiral, Loop and Whoopy.
@@ -386,7 +394,7 @@ Fit-critical interfaces remain provisional:
 - Fixed-pitch LEGO clutch calibration: IMPLEMENTED
 - 23-part physical calibration pack builder: IMPLEMENTED
 - Five-gate physical profile sealer: IMPLEMENTED
-- Six-part sealed-value pilot builder: IMPLEMENTED
+- Six-part selected-value pilot builder: IMPLEMENTED
 - Physical test progress operator: IMPLEMENTED
 - First pilot promotion gate: IMPLEMENTED
 - 11-part structural seal gate: IMPLEMENTED
@@ -407,6 +415,8 @@ Fit-critical interfaces remain provisional:
 - 15-part structural starter pack: IMPLEMENTED
 - Structural-pack geometry audit + CI artifact: IMPLEMENTED
 - Full pre-print 55-STL audit: IMPLEMENTED
+- Corrected complete 55-STL public print master: IMPLEMENTED
+- Private 57-STL master path with hash-locked native pair: IMPLEMENTED
 - S32/S40 odd/even grid-parity closure: IMPLEMENTED
 - Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
 - Snake donor: HOLD_LICENSE
