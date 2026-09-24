@@ -98,6 +98,22 @@ foreach ($file in $stls) {
   Copy-Item $auditPath (Join-Path $Stage "05_AUDIT") -Force
 }
 
+$uniqueHashes = @($manifest.sha256 | Sort-Object -Unique)
+if ($uniqueHashes.Count -ne 47) {
+  $duplicates = $manifest |
+    Group-Object sha256 |
+    Where-Object { $_.Count -gt 1 } |
+    ForEach-Object {
+      [pscustomobject]@{
+        sha256 = $_.Name
+        files = ($_.Group.file -join "; ")
+      }
+    }
+
+  $detail = ($duplicates | ForEach-Object { "$($_.sha256): $($_.files)" }) -join " | "
+  throw "Duplicate STL payloads detected. Expected 47 unique SHA-256 values. $detail"
+}
+
 $categoryCounts = $manifest | Group-Object category | Sort-Object Name
 
 $expectedCounts = @{
@@ -171,6 +187,7 @@ $summary = [ordered]@{
   all_positive_shells_one = $true
   all_watertight = $true
   all_zero_degenerate = $true
+  unique_stl_sha256 = 47
 }
 $summary | ConvertTo-Json -Depth 5 |
   Set-Content -Encoding UTF8 -Path (Join-Path $Stage "DIGITAL_AUDIT_SUMMARY.json")
