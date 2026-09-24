@@ -31,7 +31,9 @@ else {
 
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Cad = Join-Path $Root "cad\HAP_MASTER_v0.1.scad"
+$NativeCad = Join-Path $Root "cad\DONOR_NATIVE_CONNECTOR_v0.1.scad"
 $NativeBuilder = Join-Path $Root "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
+$InterfaceSsot = Join-Path $Root "INTERFACE_SSOT_v0.1.md"
 $FinalAudit = Join-Path $Root "FINAL_RELEASE_AUDIT.ps1"
 $RegistryPath = Join-Path $Root "donors\DONOR_REGISTRY_v0.1.csv"
 
@@ -42,7 +44,9 @@ foreach ($required in @(
   $StructuralReceiptJson,
   $ShowReceiptJson,
   $Cad,
+  $NativeCad,
   $NativeBuilder,
+  $InterfaceSsot,
   $FinalAudit,
   $RegistryPath
 )) {
@@ -56,6 +60,20 @@ $show = Get-Content -Raw $ShowReceiptJson | ConvertFrom-Json
 
 if ($profile.reality_state -ne "INTERFACE_VALUES_PHYSICALLY_SELECTED_PENDING_SYSTEM_PILOT") {
   throw "Physical profile is not release-eligible: $($profile.reality_state)"
+}
+
+$sourceChecks = [ordered]@{
+  hap_master_sha256 = $Cad
+  native_connector_cad_sha256 = $NativeCad
+  native_connector_builder_sha256 = $NativeBuilder
+  interface_ssot_sha256 = $InterfaceSsot
+}
+foreach ($entry in $sourceChecks.GetEnumerator()) {
+  $expected = $profile.source_lock.($entry.Key)
+  $actual = (Get-FileHash -Algorithm SHA256 $entry.Value).Hash.ToLowerInvariant()
+  if ([string]::IsNullOrWhiteSpace($expected) -or $actual -ne $expected) {
+    throw "Final release source lock mismatch: $($entry.Key)"
+  }
 }
 if ($pilot.reality_state -ne "PHYSICAL_PILOT_PASS") {
   throw "Pilot receipt is not release-eligible: $($pilot.reality_state)"
@@ -417,6 +435,10 @@ HAP FINAL v1.0.0 RELEASE SEAL
 =============================
 Reality state: FINAL_AUDIT_PASS
 Physical profile SHA256: $profileReleaseHash
+HAP master CAD SHA256: $($profile.source_lock.hap_master_sha256)
+Native connector CAD SHA256: $($profile.source_lock.native_connector_cad_sha256)
+Native connector builder SHA256: $($profile.source_lock.native_connector_builder_sha256)
+Interface SSOT SHA256: $($profile.source_lock.interface_ssot_sha256)
 Final manifest SHA256: $manifestHash
 Final audit receipt SHA256: $auditHash
 Final STL count: 38
