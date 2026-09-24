@@ -187,6 +187,23 @@ jobs:
           print("Deep STL audit PASS: 47/47 watertight, one positive solid shell, zero degenerate triangles")
           PY
 
+      - name: Build audited 47-STL digital set
+        shell: pwsh
+        run: |
+          ./HAP/BUILD_DIGITAL_STL_SET.ps1 `
+            -OutDir "./HAP/out" `
+            -AuditDir "./HAP/geometry_audit" `
+            -OutputDir "./HAP/digital_release"
+
+          if (-not (Test-Path "./HAP/digital_release/HAP_DIGITAL_STL_SET_v0.1.zip")) {
+            throw "Digital STL set ZIP was not created."
+          }
+
+          $count = (Get-ChildItem "./HAP/digital_release/HAP_DIGITAL_STL_SET_v0.1" -Recurse -Filter "*.stl" -File).Count
+          if ($count -ne 47) {
+            throw "Digital STL set expected 47 STLs, found $count."
+          }
+
       - name: Validate donor registry and recipes
         shell: bash
         run: |
@@ -343,6 +360,7 @@ jobs:
             "HAP/RESTORE_PHYSICAL_CHECKPOINT.ps1",
             "HAP/REFRESH_PHYSICAL_WORKBENCH.ps1",
             "HAP/BUILD_PHYSICAL_WORKBENCH.ps1",
+            "HAP/BUILD_DIGITAL_STL_SET.ps1",
             "HAP/PHYSICAL_WORKBENCH_MENU.ps1"
           )
 
