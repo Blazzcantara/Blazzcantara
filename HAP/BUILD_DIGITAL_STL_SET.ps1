@@ -31,6 +31,8 @@ foreach ($dir in $dirs) {
   New-Item -ItemType Directory -Force -Path (Join-Path $Stage $dir) | Out-Null
 }
 
+$StageResolved = (Resolve-Path $Stage).Path
+
 function Get-Category([string]$Name) {
   if ($Name -like "CAL_*") {
     return "01_CALIBRATION"
@@ -142,6 +144,32 @@ $hashLines = Get-ChildItem $Stage -Recurse -Filter "*.stl" -File |
     "$hash  $relative"
   }
 $hashLines | Set-Content -Encoding ASCII -Path $shaPath
+
+$sumLines = @(Get-Content $shaPath | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+if ($sumLines.Count -ne 47) {
+  throw "SHA256SUMS expected 47 entries, found $($sumLines.Count)."
+}
+
+foreach ($line in $sumLines) {
+  $parts = $line -split "  ", 2
+  if ($parts.Count -ne 2 -or $parts[0] -notmatch "^[0-9a-fA-F]{64}$") {
+    throw "Malformed digital SHA256SUMS line: $line"
+  }
+
+  $expected = $parts[0].ToLowerInvariant()
+  $relative = $parts[1]
+  $target = Join-Path $StageResolved $relative
+
+  if (-not (Test-Path $target)) {
+    throw "Digital SHA256SUMS references missing STL: $relative"
+  }
+
+  $actual = (Get-FileHash -Algorithm SHA256 $target).Hash.ToLowerInvariant()
+  if ($actual -ne $expected) {
+    throw "Digital SHA256SUMS mismatch: $relative"
+  }
+}
+Write-Host "Digital SHA256SUMS self-verification PASS" -ForegroundColor Green
 
 $status = @"
 # HAP Digital STL Set v0.1
