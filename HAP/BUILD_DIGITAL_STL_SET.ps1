@@ -229,6 +229,52 @@ $zipHash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash.ToLowerInvariant()
 "$zipHash  HAP_DIGITAL_STL_SET_v0.1.zip" |
   Set-Content -Encoding ASCII -Path ($zipPath + ".sha256")
 
+# Verify the exact ZIP distribution after a clean re-extraction.
+$verifyDir = Join-Path $OutputDir "_HAP_DIGITAL_VERIFY"
+if (Test-Path $verifyDir) { Remove-Item $verifyDir -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $verifyDir | Out-Null
+
+Expand-Archive -Path $zipPath -DestinationPath $verifyDir -Force
+
+$verifyStls = @(Get-ChildItem $verifyDir -Recurse -Filter "*.stl" -File)
+if ($verifyStls.Count -ne 47) {
+  throw "Digital ZIP round-trip expected 47 STL files, found $($verifyStls.Count)."
+}
+
+$verifySums = Join-Path $verifyDir "SHA256SUMS.txt"
+if (-not (Test-Path $verifySums)) {
+  throw "Digital ZIP round-trip is missing SHA256SUMS.txt."
+}
+
+$verifiedEntries = 0
+foreach ($line in (Get-Content $verifySums | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
+  $parts = $line -split "  ", 2
+  if ($parts.Count -ne 2 -or $parts[0] -notmatch "^[0-9a-fA-F]{64}$") {
+    throw "Digital ZIP round-trip found malformed checksum line: $line"
+  }
+
+  $expected = $parts[0].ToLowerInvariant()
+  $relative = $parts[1]
+  $target = Join-Path $verifyDir $relative
+
+  if (-not (Test-Path $target)) {
+    throw "Digital ZIP round-trip references missing STL: $relative"
+  }
+
+  $actual = (Get-FileHash -Algorithm SHA256 $target).Hash.ToLowerInvariant()
+  if ($actual -ne $expected) {
+    throw "Digital ZIP round-trip hash mismatch: $relative"
+  }
+
+  $verifiedEntries++
+}
+
+if ($verifiedEntries -ne 47) {
+  throw "Digital ZIP round-trip expected 47 verified checksum entries, found $verifiedEntries."
+}
+
+Remove-Item $verifyDir -Recurse -Force
+
 Write-Host ""
 Write-Host "PASS: digital STL set generated" -ForegroundColor Green
 Write-Host "STLs: 47"
