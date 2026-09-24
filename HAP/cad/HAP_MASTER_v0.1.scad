@@ -1,5 +1,5 @@
 /*
-Hybrid Adapter Pack v0.1 — HAP-002..022 Parametric Master
+Hybrid Adapter Pack v0.1 — HAP-002..040 Parametric Master
 Original parametric compatibility geometry.
 GENERATED != PHYSICALLY VALIDATED.
 
@@ -178,8 +178,12 @@ module lego_to_gt_adapter(nx=4, ny=4, xy_scale=1.0, male_flat=29.78, transition_
                         hex2d(gt_support_outer_flat);
             }
 
-            translate([0,0,z0+0.50])
-                hex_prism(inner_flat,transition_h+gt_platform_h+gt_ring_h+2.0,0);
+            // Keep enough material around narrow bases. On a 2x2 footprint the
+            // old through-relief removed the complete transition for several mm
+            // and produced two disconnected solids.
+            if (min(w,d) > inner_flat + 4.0)
+                translate([0,0,z0+0.50])
+                    hex_prism(inner_flat,transition_h+gt_platform_h+gt_ring_h+2.0,0);
         }
 
         gt_support_top(male_flat,z1);
@@ -385,9 +389,12 @@ module lego_to_core_cap(
                         hex2d(gt_support_outer_flat);
             }
 
-            // Internal relief keeps the transition light while leaving a load path.
-            translate([0,0,z0+0.8])
-                hex_prism(gt_support_outer_flat-7.0,transition_h+0.5,0,0);
+            // Internal relief keeps wider transitions light. The 2x4 variant
+            // stays solid because the previous relief completely separated the
+            // lower LEGO foot from the upper core receiver.
+            if (nx >= 4)
+                translate([0,0,z0+0.8])
+                    hex_prism(gt_support_outer_flat-7.0,transition_h+0.5,0,0);
         }
 
         core_socket_top(
@@ -590,11 +597,39 @@ module cross_outrigger_core(
     core_clearance=0.30,
     deck_h=4.0
 ) {
-    union() {
-        dual_lego_foot_core(2,2,foot_spacing,xy_scale,core_clearance,deck_h);
+    // Build the four-foot cross first and add exactly ONE core receiver.
+    // The previous implementation unioned two complete dual-foot modules,
+    // each with its own differently rotated socket. Their union could partially
+    // fill the intended HAP core cavity and shrink it into a non-standard shape.
+    foot_w = 2*lego_pitch - lego_gap;
+    foot_d = 2*lego_pitch - lego_gap;
+    arm_span = foot_spacing + foot_w;
+    z0 = lego_plate_h;
+    socket_overlap = 0.20;
 
-        rotate([0,0,90])
-            dual_lego_foot_core(2,2,foot_spacing,xy_scale,core_clearance,deck_h);
+    union() {
+        // Four independent LEGO feet.
+        for (sx=[-foot_spacing/2,foot_spacing/2])
+            translate([sx,0,0])
+                lego_tile_bottom(2,2,xy_scale);
+
+        for (sy=[-foot_spacing/2,foot_spacing/2])
+            translate([0,sy,0])
+                lego_tile_bottom(2,2,xy_scale);
+
+        // Orthogonal load paths. Keeping the arms narrow saves material while
+        // the central HAP receiver supplies the wide anti-twist footprint.
+        centered_cube_xy(arm_span,foot_d,deck_h,z0);
+        centered_cube_xy(foot_w,arm_span,deck_h,z0);
+
+        // Single canonical socket orientation with a small vertical overlap so
+        // the receiver and cross deck form one robust printable solid.
+        core_socket_top(
+            gt_support_outer_flat,
+            core_clearance,
+            z0+deck_h-socket_overlap,
+            full_hex_shell_h
+        );
     }
 }
 
@@ -603,7 +638,7 @@ module cross_outrigger_core(
 // -------------------------
 module donor_pad_hex(
     pad_flat=gt_tile_flat,
-    pad_h=2.40,
+    pad_h=full_hex_shell_h,
     core_clearance=0.30
 ) {
     socket_flat = core_nominal_flat + core_clearance;
@@ -611,15 +646,21 @@ module donor_pad_hex(
     difference() {
         hex_prism(pad_flat,pad_h,0,0);
 
+        // Production-style top-opening HAP core socket.
+        translate([0,0,pad_h-core_h])
+            hex_prism(socket_flat,core_h+eps,0,0);
+
+        // Small underside relief limits elephant-foot interference without
+        // turning the receiver into a through-hole.
         translate([0,0,-eps])
-            hex_prism(socket_flat,min(core_h,pad_h)+2*eps,0,0);
+            hex_prism(core_nominal_flat-3.0,1.00+eps,0,0);
     }
 }
 
 module donor_pad_rect(
     w=48.0,
-    d=24.0,
-    pad_h=2.40,
+    d=36.0,
+    pad_h=full_hex_shell_h,
     core_clearance=0.30
 ) {
     socket_flat = core_nominal_flat + core_clearance;
@@ -627,8 +668,15 @@ module donor_pad_rect(
     difference() {
         centered_cube_xy(w,d,pad_h,0);
 
+        // The old 48x24 through-cut was narrower than the HAP core socket and
+        // split the pad into two separate pieces. A 48x36 receiver preserves a
+        // continuous perimeter and uses the same top-opening socket depth as
+        // the production carriers.
+        translate([0,0,pad_h-core_h])
+            hex_prism(socket_flat,core_h+eps,0,0);
+
         translate([0,0,-eps])
-            hex_prism(socket_flat,min(core_h,pad_h)+2*eps,0,0);
+            hex_prism(core_nominal_flat-3.0,1.00+eps,0,0);
     }
 }
 
@@ -777,7 +825,7 @@ else if (PART == "DONOR_PAD_HEX")
     donor_pad_hex(gt_tile_flat,2.40,CORE_CLEARANCE);
 
 else if (PART == "DONOR_PAD_RECT")
-    donor_pad_rect(48.0,24.0,2.40,CORE_CLEARANCE);
+    donor_pad_rect(48.0,36.0,2.40,CORE_CLEARANCE);
 
 else if (PART == "DONOR_CORE_MOUNT")
     donor_core_mount(42.0,2.40,0.20);

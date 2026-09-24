@@ -16,11 +16,27 @@ $NativeBuilder = Join-Path $Root "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
 if (-not (Test-Path $ProfileJson)) { throw "Profile not found: $ProfileJson" }
 if (-not (Test-Path $ArchivePath)) { throw "Archive not found: $ArchivePath" }
 if (-not (Test-Path $Cad)) { throw "HAP master CAD not found." }
+if (-not (Test-Path $NativeCad)) { throw "Native connector CAD not found." }
 if (-not (Test-Path $NativeBuilder)) { throw "Native connector builder not found." }
+if (-not (Test-Path $InterfaceSsot)) { throw "Interface SSOT not found." }
 
 $profile = Get-Content -Raw -Path $ProfileJson | ConvertFrom-Json
 if ($profile.reality_state -ne "INTERFACE_VALUES_PHYSICALLY_SELECTED_PENDING_SYSTEM_PILOT") {
   throw "Profile is not a real physically selected interface profile. State: $($profile.reality_state)"
+}
+
+$sourceChecks = [ordered]@{
+  hap_master_sha256 = $Cad
+  native_connector_cad_sha256 = $NativeCad
+  native_connector_builder_sha256 = $NativeBuilder
+  interface_ssot_sha256 = $InterfaceSsot
+}
+foreach ($entry in $sourceChecks.GetEnumerator()) {
+  $expected = $profile.source_lock.($entry.Key)
+  $actual = (Get-FileHash -Algorithm SHA256 $entry.Value).Hash.ToLowerInvariant()
+  if ([string]::IsNullOrWhiteSpace($expected) -or $actual -ne $expected) {
+    throw "Physical profile source lock mismatch: $($entry.Key)"
+  }
 }
 
 $legoDelta = [double]$profile.selected.LEGO_CLUTCH.value

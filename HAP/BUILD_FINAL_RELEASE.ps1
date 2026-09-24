@@ -18,11 +18,25 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+$PowerShellExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+  (Get-Command pwsh).Source
+}
+elseif (Get-Command powershell -ErrorAction SilentlyContinue) {
+  (Get-Command powershell).Source
+}
+else {
+  throw "PowerShell executable not found."
+}
+
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Cad = Join-Path $Root "cad\HAP_MASTER_v0.1.scad"
+$NativeCad = Join-Path $Root "cad\DONOR_NATIVE_CONNECTOR_v0.1.scad"
 $NativeBuilder = Join-Path $Root "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
+$InterfaceSsot = Join-Path $Root "INTERFACE_SSOT_v0.1.md"
 $FinalAudit = Join-Path $Root "FINAL_RELEASE_AUDIT.ps1"
 $RegistryPath = Join-Path $Root "donors\DONOR_REGISTRY_v0.1.csv"
+$AuditTool = Join-Path $Root "tools\STL_COMPONENT_AUDIT.py"
 
 foreach ($required in @(
   $ArchivePath,
@@ -31,9 +45,12 @@ foreach ($required in @(
   $StructuralReceiptJson,
   $ShowReceiptJson,
   $Cad,
+  $NativeCad,
   $NativeBuilder,
+  $InterfaceSsot,
   $FinalAudit,
-  $RegistryPath
+  $RegistryPath,
+  $AuditTool
 )) {
   if (-not (Test-Path $required)) { throw "Required file not found: $required" }
 }
@@ -45,6 +62,20 @@ $show = Get-Content -Raw $ShowReceiptJson | ConvertFrom-Json
 
 if ($profile.reality_state -ne "INTERFACE_VALUES_PHYSICALLY_SELECTED_PENDING_SYSTEM_PILOT") {
   throw "Physical profile is not release-eligible: $($profile.reality_state)"
+}
+
+$sourceChecks = [ordered]@{
+  hap_master_sha256 = $Cad
+  native_connector_cad_sha256 = $NativeCad
+  native_connector_builder_sha256 = $NativeBuilder
+  interface_ssot_sha256 = $InterfaceSsot
+}
+foreach ($entry in $sourceChecks.GetEnumerator()) {
+  $expected = $profile.source_lock.($entry.Key)
+  $actual = (Get-FileHash -Algorithm SHA256 $entry.Value).Hash.ToLowerInvariant()
+  if ([string]::IsNullOrWhiteSpace($expected) -or $actual -ne $expected) {
+    throw "Final release source lock mismatch: $($entry.Key)"
+  }
 }
 if ($pilot.reality_state -ne "PHYSICAL_PILOT_PASS") {
   throw "Pilot receipt is not release-eligible: $($pilot.reality_state)"
@@ -95,6 +126,20 @@ foreach ($candidate in $candidates) {
 }
 if (-not $OpenSCAD) { throw "OpenSCAD not found." }
 
+$Python = $null
+$PythonPrefix = @()
+foreach ($candidate in @("python","python3","py")) {
+  $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+  if ($cmd) {
+    $Python = $cmd.Source
+    if ($candidate -eq "py") { $PythonPrefix = @("-3") }
+    break
+  }
+}
+if (-not $Python) {
+  throw "Python 3 not found; required for final STL geometry audit."
+}
+
 $Release = Join-Path $OutputDir "HAP_FINAL_v1.0.0"
 $NativeTemp = Join-Path $OutputDir "_native_final"
 
@@ -116,6 +161,8 @@ foreach ($dir in $dirs) {
   New-Item -ItemType Directory -Force -Path (Join-Path $Release $dir) | Out-Null
 }
 New-Item -ItemType Directory -Force -Path $NativeTemp | Out-Null
+
+$ReleaseResolved = (Resolve-Path $Release).Path
 
 function Build-FinalPart {
   param(
@@ -192,7 +239,7 @@ foreach ($nativeMode in @("CONNECTOR_ONLY","CORE_BRIDGE")) {
     "-Scales", $nativeScale,
     "-Modes", $nativeMode
   )
-  & powershell @nativeArgs
+  & $PowerShellExe @nativeArgs
   if ($LASTEXITCODE -ne 0) { throw "Native final build failed for $nativeMode." }
 }
 
@@ -226,6 +273,9 @@ try {
     $row = $registry | Where-Object { $_.donor_id -eq $id } | Select-Object -First 1
     if (-not $row) { throw "Missing donor registry row: $id" }
     if ($row.license_state -ne "CC_ATTRIBUTION") { throw "Donor is not redistribution-eligible: $id" }
+    if ($row.conversion_state -ne "READY_FOR_PRIVATE_CONVERSION") {
+      throw "Donor is not in the final conversion-ready state: $id"
+    }
 
     $wanted = $row.source_path.Replace("\","/")
     $entry = $zip.Entries | Where-Object { $_.FullName.Replace("\","/") -eq $wanted } | Select-Object -First 1
@@ -249,21 +299,24 @@ try {
     Where-Object { $_.FullName -like "Gravitrax Tiles Variations Collection - 4538769 -*README.txt" } |
     Select-Object -First 1
 
-  if ($licenseEntry) {
-    [System.IO.Compression.ZipFileExtensions]::ExtractToFile(
-      $licenseEntry,
-      (Join-Path $Release "07_DOCUMENTATION\DONOR_LICENSE_ORIGINAL.txt"),
-      $true
-    )
+  if (-not $licenseEntry) {
+    throw "Approved donor family LICENSE.txt is missing from the source archive."
+  }
+  if (-not $readmeEntry) {
+    throw "Approved donor family README.txt is missing from the source archive."
   }
 
-  if ($readmeEntry) {
-    [System.IO.Compression.ZipFileExtensions]::ExtractToFile(
-      $readmeEntry,
-      (Join-Path $Release "07_DOCUMENTATION\DONOR_README_ORIGINAL.txt"),
-      $true
-    )
-  }
+  [System.IO.Compression.ZipFileExtensions]::ExtractToFile(
+    $licenseEntry,
+    (Join-Path $Release "07_DOCUMENTATION\DONOR_LICENSE_ORIGINAL.txt"),
+    $true
+  )
+
+  [System.IO.Compression.ZipFileExtensions]::ExtractToFile(
+    $readmeEntry,
+    (Join-Path $Release "07_DOCUMENTATION\DONOR_README_ORIGINAL.txt"),
+    $true
+  )
 }
 finally {
   $zip.Dispose()
@@ -281,7 +334,10 @@ $docs = @(
   "DONOR_CONVERSION_RULES_v0.1.md",
   "donors\DONOR_ATTRIBUTION_v0.1.md",
   "donors\NATIVE_CONNECTOR_SSOT_v0.1.md",
-  "donors\PILOT_SHOW_MODULES_v0.1.md"
+  "donors\PILOT_SHOW_MODULES_v0.1.md",
+  "cad\HAP_MASTER_v0.1.scad",
+  "cad\DONOR_NATIVE_CONNECTOR_v0.1.scad",
+  "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
 )
 
 foreach ($doc in $docs) {
@@ -318,6 +374,14 @@ STL layout:
 - 05_FALLBACK_DONOR_MOUNTS: 6 fallback mount parts
 
 Expected final STL total: 38
+
+Validation scope:
+- Core adapters use the physically selected interfaces but are not claimed as individually printed variants.
+- Structural parts require individual structural physical PASS.
+- Native connector parts require interface selection plus the first system pilot.
+- Show modules require their rolling physical PASS.
+- Fallback donor mounts are included as digitally audited utility parts and are NOT claimed as donor-specific physical PASS.
+- Every one of the 38 final STL files must pass the final watertight / one-positive-solid / no-degenerate geometry audit.
 "@
 Set-Content -Encoding UTF8 -Path (Join-Path $Release "00_RELEASE\README_FINAL.md") -Value $releaseReadme
 
@@ -326,13 +390,66 @@ if ($stls.Count -ne 38) {
   throw "Expected 38 final STL files before audit, found $($stls.Count)."
 }
 
+$finalGeometryDir = Join-Path $Release "06_EVIDENCE\FINAL_GEOMETRY"
+New-Item -ItemType Directory -Force -Path $finalGeometryDir | Out-Null
+
+foreach ($file in $stls) {
+  $relative = $file.FullName.Substring($ReleaseResolved.Length).TrimStart([char[]]"\/")
+  $safeName = ($relative -replace '[\\/:*?"<>|]','_')
+  $jsonOut = Join-Path $finalGeometryDir ($safeName + ".json")
+
+  $geometryArgs = @()
+  $geometryArgs += $PythonPrefix
+  $geometryArgs += @(
+    $AuditTool,
+    $file.FullName,
+    "--json-out", $jsonOut,
+    "--expect-positive-shells", "1",
+    "--require-watertight",
+    "--require-no-degenerate"
+  )
+  & $Python @geometryArgs
+  if ($LASTEXITCODE -ne 0) {
+    throw "Final STL geometry audit failed: $relative"
+  }
+}
+
+$geometryReceipts = @(Get-ChildItem $finalGeometryDir -Filter "*.json" -File)
+if ($geometryReceipts.Count -ne 38) {
+  throw "Expected 38 final geometry receipts, found $($geometryReceipts.Count)."
+}
+
 $manifest = foreach ($file in $stls) {
-  $relative = $file.FullName.Substring($Release.Length).TrimStart([char[]]"\/")
+  $relative = $file.FullName.Substring($ReleaseResolved.Length).TrimStart([char[]]"\/")
+  $topDir = ($relative -split '[\\/]')[0]
+
+  $validationScope = switch ($topDir) {
+    "01_CORE_ADAPTERS" {
+      "INTERFACE_PHYSICALLY_SELECTED_GEOMETRY_AUDITED"
+    }
+    "02_STRUCTURAL" {
+      "STRUCTURAL_PHYSICAL_PASS"
+    }
+    "03_NATIVE_CONNECTOR" {
+      "PHYSICAL_INTERFACE_AND_PILOT_PASS"
+    }
+    "04_SHOW_MODULES" {
+      "ROLLING_PHYSICAL_PASS"
+    }
+    "05_FALLBACK_DONOR_MOUNTS" {
+      "DIGITAL_GEOMETRY_PASS_FALLBACK_NOT_DONOR_SPECIFIC_PHYSICAL"
+    }
+    default {
+      throw "Unexpected final STL directory while building manifest: $topDir"
+    }
+  }
+
   [pscustomobject]@{
     relative_path = $relative
+    category = $topDir
     size_bytes = $file.Length
     sha256 = (Get-FileHash -Algorithm SHA256 $file.FullName).Hash.ToLowerInvariant()
-    reality_state = "PHYSICAL_RELEASE_CANDIDATE"
+    validation_scope = $validationScope
   }
 }
 $manifest | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $Release "00_RELEASE\FINAL_MANIFEST.csv")
@@ -354,7 +471,7 @@ $auditArgs = @(
   "-File", $FinalAudit,
   "-ReleaseDir", $Release
 )
-& powershell @auditArgs
+& $PowerShellExe @auditArgs
 if ($LASTEXITCODE -ne 0) { throw "Final release audit failed." }
 
 $auditReceipt = Join-Path $Release "00_RELEASE\FINAL_AUDIT_RECEIPT.json"
@@ -367,11 +484,28 @@ HAP FINAL v1.0.0 RELEASE SEAL
 =============================
 Reality state: FINAL_AUDIT_PASS
 Physical profile SHA256: $profileReleaseHash
+HAP master CAD SHA256: $($profile.source_lock.hap_master_sha256)
+Native connector CAD SHA256: $($profile.source_lock.native_connector_cad_sha256)
+Native connector builder SHA256: $($profile.source_lock.native_connector_builder_sha256)
+Interface SSOT SHA256: $($profile.source_lock.interface_ssot_sha256)
 Final manifest SHA256: $manifestHash
 Final audit receipt SHA256: $auditHash
 Final STL count: 38
 "@
 Set-Content -Encoding ASCII -Path (Join-Path $Release "00_RELEASE\RELEASE_SEAL.txt") -Value $seal
+
+# Final distribution sums are generated after the audit receipt and release seal
+# exist. The checksum file excludes only itself, avoiding a circular hash.
+$finalSumsPath = Join-Path $Release "00_RELEASE\SHA256SUMS_FINAL.txt"
+$finalHashLines = Get-ChildItem $Release -Recurse -File |
+  Where-Object { $_.FullName -ne $finalSumsPath } |
+  Sort-Object FullName |
+  ForEach-Object {
+    $rel = $_.FullName.Substring($ReleaseResolved.Length).TrimStart([char[]]"\/")
+    $hash = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant()
+    "$hash  $rel"
+  }
+$finalHashLines | Set-Content -Encoding ASCII -Path $finalSumsPath
 
 $zipPath = Join-Path $OutputDir "HAP_FINAL_v1.0.0.zip"
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
@@ -380,6 +514,49 @@ Compress-Archive -Path (Join-Path $Release "*") -DestinationPath $zipPath
 $zipHash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash.ToLowerInvariant()
 "$zipHash  HAP_FINAL_v1.0.0.zip" |
   Set-Content -Encoding ASCII -Path (Join-Path $OutputDir "HAP_FINAL_v1.0.0.zip.sha256")
+
+# Distribution round-trip verification: re-extract the exact final ZIP and
+# verify every final checksum plus the final STL count.
+$verifyDir = Join-Path $OutputDir "_HAP_FINAL_VERIFY"
+if (Test-Path $verifyDir) { Remove-Item $verifyDir -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $verifyDir | Out-Null
+Expand-Archive -Path $zipPath -DestinationPath $verifyDir -Force
+
+$verifySums = Join-Path $verifyDir "00_RELEASE\SHA256SUMS_FINAL.txt"
+if (-not (Test-Path $verifySums)) {
+  throw "Round-trip verification failed: SHA256SUMS_FINAL.txt missing."
+}
+
+$checksumPattern = "^[0-9a-fA-F]{64}  .+$"
+foreach ($line in (Get-Content $verifySums | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
+  if ($line -notmatch $checksumPattern) {
+    throw "Round-trip verification found malformed checksum line: $line"
+  }
+
+  $parts = $line -split "  ", 2
+  if ($parts.Count -ne 2) {
+    throw "Round-trip verification could not split checksum line: $line"
+  }
+
+  $expected = $parts[0].ToLowerInvariant()
+  $relative = $parts[1]
+  $file = Join-Path $verifyDir $relative
+  if (-not (Test-Path $file)) {
+    throw "Round-trip verification missing file: $relative"
+  }
+
+  $actual = (Get-FileHash -Algorithm SHA256 $file).Hash.ToLowerInvariant()
+  if ($actual -ne $expected) {
+    throw "Round-trip verification hash mismatch: $relative"
+  }
+}
+
+$verifyStls = @(Get-ChildItem $verifyDir -Recurse -Filter "*.stl" -File)
+if ($verifyStls.Count -ne 38) {
+  throw "Round-trip verification expected 38 STL files, found $($verifyStls.Count)."
+}
+
+Remove-Item $verifyDir -Recurse -Force
 
 Write-Host ""
 Write-Host "PASS: HAP FINAL v1.0.0 generated" -ForegroundColor Green

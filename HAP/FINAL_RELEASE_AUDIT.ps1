@@ -79,6 +79,73 @@ if ($stls.Count -ne 38) {
   throw "Expected 38 final STL files, found $($stls.Count)."
 }
 
+$expectedStlDistribution = [ordered]@{
+  "01_CORE_ADAPTERS" = 11
+  "02_STRUCTURAL" = 11
+  "03_NATIVE_CONNECTOR" = 2
+  "04_SHOW_MODULES" = 8
+  "05_FALLBACK_DONOR_MOUNTS" = 6
+}
+
+foreach ($entry in $expectedStlDistribution.GetEnumerator()) {
+  $dir = Join-Path $ReleaseDir $entry.Key
+  $count = @(Get-ChildItem $dir -Filter "*.stl" -File).Count
+  if ($count -ne $entry.Value) {
+    throw "Final STL distribution mismatch in $($entry.Key): expected $($entry.Value), found $count."
+  }
+}
+
+$expectedShowIds = @(
+  "SHOW-ST01",
+  "SHOW-CV01",
+  "SHOW-SC01",
+  "SHOW-X01",
+  "SHOW-SP01",
+  "SHOW-LP01",
+  "SHOW-WP01",
+  "SHOW-SOL01"
+)
+$showFiles = @(Get-ChildItem (Join-Path $ReleaseDir "04_SHOW_MODULES") -Filter "*.stl" -File)
+foreach ($id in $expectedShowIds) {
+  if (@($showFiles | Where-Object { $_.Name -like ($id + "_*") }).Count -ne 1) {
+    throw "Final show-module set is missing or duplicates donor ID: $id"
+  }
+}
+if (@($showFiles | Where-Object { $_.Name -like "SHOW-SNAKE01_*" }).Count -gt 0) {
+  throw "License-held Snake donor must not appear in the final release."
+}
+
+$requiredDonorDocs = @(
+  "07_DOCUMENTATION\DONOR_LICENSE_ORIGINAL.txt",
+  "07_DOCUMENTATION\DONOR_README_ORIGINAL.txt",
+  "07_DOCUMENTATION\DONOR_ATTRIBUTION_v0.1.md",
+  "07_DOCUMENTATION\LICENSE.md",
+  "07_DOCUMENTATION\HAP_MASTER_v0.1.scad",
+  "07_DOCUMENTATION\DONOR_NATIVE_CONNECTOR_v0.1.scad",
+  "07_DOCUMENTATION\BUILD_NATIVE_CONNECTOR_PILOT.ps1",
+  "07_DOCUMENTATION\INTERFACE_SSOT_v0.1.md"
+)
+foreach ($relative in $requiredDonorDocs) {
+  if (-not (Test-Path (Join-Path $ReleaseDir $relative))) {
+    throw "Required donor/license/source documentation missing: $relative"
+  }
+}
+
+$packagedSourceChecks = [ordered]@{
+  hap_master_sha256 = "07_DOCUMENTATION\HAP_MASTER_v0.1.scad"
+  native_connector_cad_sha256 = "07_DOCUMENTATION\DONOR_NATIVE_CONNECTOR_v0.1.scad"
+  native_connector_builder_sha256 = "07_DOCUMENTATION\BUILD_NATIVE_CONNECTOR_PILOT.ps1"
+  interface_ssot_sha256 = "07_DOCUMENTATION\INTERFACE_SSOT_v0.1.md"
+}
+foreach ($entry in $packagedSourceChecks.GetEnumerator()) {
+  $expected = $profile.source_lock.($entry.Key)
+  $path = Join-Path $ReleaseDir $entry.Value
+  $actual = (Get-FileHash -Algorithm SHA256 $path).Hash.ToLowerInvariant()
+  if ([string]::IsNullOrWhiteSpace($expected) -or $actual -ne $expected) {
+    throw "Packaged source lock mismatch: $($entry.Key)"
+  }
+}
+
 $forbidden = @(
   "CAL_",
   "SMOKE",
@@ -95,12 +162,41 @@ foreach ($file in Get-ChildItem $ReleaseDir -Recurse -File) {
   }
 }
 
+$geometryDir = Join-Path $ReleaseDir "06_EVIDENCE\FINAL_GEOMETRY"
+if (-not (Test-Path $geometryDir)) {
+  throw "Final geometry evidence directory missing."
+}
+$geometryReceipts = @(Get-ChildItem $geometryDir -Filter "*.json" -File)
+if ($geometryReceipts.Count -ne 38) {
+  throw "Expected 38 final geometry receipts, found $($geometryReceipts.Count)."
+}
+foreach ($receiptFile in $geometryReceipts) {
+  $geometry = Get-Content -Raw $receiptFile.FullName | ConvertFrom-Json
+  if ($geometry.positive_shells -ne 1) {
+    throw "Final geometry receipt has invalid positive-shell count: $($receiptFile.Name)"
+  }
+  if (-not $geometry.watertight_edge_test) {
+    throw "Final geometry receipt is not watertight: $($receiptFile.Name)"
+  }
+  if ($geometry.degenerate_triangle_count -ne 0) {
+    throw "Final geometry receipt contains degenerate triangles: $($receiptFile.Name)"
+  }
+}
+
 $manifestPath = Join-Path $ReleaseDir "00_RELEASE\FINAL_MANIFEST.csv"
 if (-not (Test-Path $manifestPath)) { throw "FINAL_MANIFEST.csv missing." }
 
 $manifest = @(Import-Csv $manifestPath)
 if ($manifest.Count -ne 38) {
   throw "Expected 38 manifest rows, found $($manifest.Count)."
+}
+
+$expectedValidationScope = @{
+  "01_CORE_ADAPTERS" = "INTERFACE_PHYSICALLY_SELECTED_GEOMETRY_AUDITED"
+  "02_STRUCTURAL" = "STRUCTURAL_PHYSICAL_PASS"
+  "03_NATIVE_CONNECTOR" = "PHYSICAL_INTERFACE_AND_PILOT_PASS"
+  "04_SHOW_MODULES" = "ROLLING_PHYSICAL_PASS"
+  "05_FALLBACK_DONOR_MOUNTS" = "DIGITAL_GEOMETRY_PASS_FALLBACK_NOT_DONOR_SPECIFIC_PHYSICAL"
 }
 
 foreach ($row in $manifest) {
@@ -110,6 +206,13 @@ foreach ($row in $manifest) {
   $actual = (Get-FileHash -Algorithm SHA256 $path).Hash.ToLowerInvariant()
   if ($actual -ne $row.sha256.ToLowerInvariant()) {
     throw "Manifest hash mismatch: $($row.relative_path)"
+  }
+
+  if (-not $expectedValidationScope.ContainsKey($row.category)) {
+    throw "Manifest contains an unexpected STL category: $($row.category)"
+  }
+  if ($row.validation_scope -ne $expectedValidationScope[$row.category]) {
+    throw "Manifest validation scope mismatch: $($row.relative_path)"
   }
 }
 
@@ -145,6 +248,12 @@ $receipt = [ordered]@{
   reality_state = "FINAL_AUDIT_PASS"
   generated_utc = [DateTime]::UtcNow.ToString("o")
   final_stl_count = $stls.Count
+  distribution = $expectedStlDistribution
+  show_module_ids = $expectedShowIds
+  donor_documentation = "PASS"
+  packaged_source_lock = "PASS"
+  final_geometry_receipts = $geometryReceipts.Count
+  validation_scope = "PASS"
   manifest_rows = $manifest.Count
   sha256sum_entries = $sumLines.Count
   evidence_linkage = "PASS"

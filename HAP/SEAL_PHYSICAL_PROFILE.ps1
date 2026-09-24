@@ -8,6 +8,17 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$HapMasterCad = Join-Path $Root "cad\HAP_MASTER_v0.1.scad"
+$NativeCad = Join-Path $Root "cad\DONOR_NATIVE_CONNECTOR_v0.1.scad"
+$NativeBuilder = Join-Path $Root "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
+$InterfaceSsot = Join-Path $Root "INTERFACE_SSOT_v0.1.md"
+
+foreach ($sourceFile in @($HapMasterCad,$NativeCad,$NativeBuilder,$InterfaceSsot)) {
+  if (-not (Test-Path $sourceFile)) {
+    throw "Physical profile source-lock file missing: $sourceFile"
+  }
+}
 
 if (-not (Test-Path $ResultsCsv)) {
   throw "Results CSV not found: $ResultsCsv"
@@ -20,7 +31,8 @@ if (-not $rows) {
 
 $requiredColumns = @(
   "gate","candidate_id","parameter","value","unit",
-  "result","tested_real","force_rating","wobble_rating","notes"
+  "result","tested_real","force_rating","wobble_rating","notes",
+  "fit_direction","tested_utc"
 )
 
 foreach ($column in $requiredColumns) {
@@ -83,6 +95,27 @@ foreach ($gate in $gateOrder) {
     if ([string]::IsNullOrWhiteSpace($winner.notes)) {
       throw "Gate $gate winner requires a physical-test note."
     }
+
+    if ($winner.fit_direction -ne "GOOD") {
+      throw "Gate $gate winner must use fit_direction=GOOD."
+    }
+
+    $force = 0
+    $wobble = 0
+    if (-not [int]::TryParse($winner.force_rating,[ref]$force) -or $force -lt 1 -or $force -gt 5) {
+      throw "Gate $gate winner requires force_rating 1-5."
+    }
+    if (-not [int]::TryParse($winner.wobble_rating,[ref]$wobble) -or $wobble -lt 1 -or $wobble -gt 5) {
+      throw "Gate $gate winner requires wobble_rating 1-5."
+    }
+
+    $testedUtc = [DateTime]::MinValue
+    if (
+      [string]::IsNullOrWhiteSpace($winner.tested_utc) -or
+      -not [DateTime]::TryParse($winner.tested_utc,[ref]$testedUtc)
+    ) {
+      throw "Gate $gate winner requires a valid tested_utc timestamp."
+    }
   }
 
   $selected[$gate] = [ordered]@{
@@ -97,6 +130,8 @@ foreach ($gate in $gateOrder) {
     force_rating = $winner.force_rating
     wobble_rating = $winner.wobble_rating
     notes = $winner.notes
+    fit_direction = $winner.fit_direction
+    tested_utc = $winner.tested_utc
   }
 }
 
@@ -114,6 +149,12 @@ $profile = [ordered]@{
   reality_state = $state
   generated_utc = [DateTime]::UtcNow.ToString("o")
   source_results_sha256 = $sourceHash
+  source_lock = [ordered]@{
+    hap_master_sha256 = (Get-FileHash -Algorithm SHA256 $HapMasterCad).Hash.ToLowerInvariant()
+    native_connector_cad_sha256 = (Get-FileHash -Algorithm SHA256 $NativeCad).Hash.ToLowerInvariant()
+    native_connector_builder_sha256 = (Get-FileHash -Algorithm SHA256 $NativeBuilder).Hash.ToLowerInvariant()
+    interface_ssot_sha256 = (Get-FileHash -Algorithm SHA256 $InterfaceSsot).Hash.ToLowerInvariant()
+  }
   selected = $selected
 }
 

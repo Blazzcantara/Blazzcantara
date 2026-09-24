@@ -41,6 +41,7 @@ Lower interface:
 - HAP core body
 - 30.80 mm nominal across flats
 - 3.20 mm nominal height
+- Core orientation: 0 degrees, identical to the HAP master carrier sockets
 - 0.20 mm overlap into the native connector to guarantee a single generated body
 
 ## Preferred architecture

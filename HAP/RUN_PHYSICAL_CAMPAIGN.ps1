@@ -8,6 +8,16 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$PowerShellExe = if (Get-Command pwsh -ErrorAction SilentlyContinue) {
+  (Get-Command pwsh).Source
+}
+elseif (Get-Command powershell -ErrorAction SilentlyContinue) {
+  (Get-Command powershell).Source
+}
+else {
+  throw "PowerShell executable not found."
+}
+
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 $CreatePack = Join-Path $Root "CREATE_CALIBRATION_PACK.ps1"
@@ -17,15 +27,20 @@ $Progress = Join-Path $Root "CHECK_PHYSICAL_PROGRESS.ps1"
 $Sealer = Join-Path $Root "SEAL_PHYSICAL_PROFILE.ps1"
 $PilotBuilder = Join-Path $Root "BUILD_PHYSICAL_PILOT.ps1"
 
-foreach ($required in @(
+$requiredFiles = @(
   $ArchivePath,
-  $CreatePack,
   $Template,
   $Advisor,
   $Progress,
   $Sealer,
   $PilotBuilder
-)) {
+)
+
+if (-not $SkipPackBuild) {
+  $requiredFiles += $CreatePack
+}
+
+foreach ($required in $requiredFiles) {
   if (-not (Test-Path $required)) {
     throw "Required file not found: $required"
   }
@@ -53,7 +68,7 @@ if (-not $SkipPackBuild) {
     "-OutputDir", $PackOut
   )
 
-  & powershell @packArgs
+  & $PowerShellExe @packArgs
   if ($LASTEXITCODE -ne 0) {
     throw "Calibration pack build failed."
   }
@@ -61,14 +76,14 @@ if (-not $SkipPackBuild) {
 
 Write-Host ""
 Write-Host "=== NEXT RECOMMENDED PHYSICAL TESTS ===" -ForegroundColor Cyan
-& powershell -NoProfile -ExecutionPolicy Bypass -File $Advisor -ResultsCsv $ResultsCsv
+& $PowerShellExe -NoProfile -ExecutionPolicy Bypass -File $Advisor -ResultsCsv $ResultsCsv
 if ($LASTEXITCODE -ne 0) {
   throw "Calibration advisor failed."
 }
 
 Write-Host ""
 Write-Host "=== PHYSICAL GATE PROGRESS ===" -ForegroundColor Cyan
-& powershell -NoProfile -ExecutionPolicy Bypass -File $Progress -ResultsCsv $ResultsCsv
+& $PowerShellExe -NoProfile -ExecutionPolicy Bypass -File $Progress -ResultsCsv $ResultsCsv
 $progressExit = $LASTEXITCODE
 
 if ($progressExit -eq 0) {
@@ -82,7 +97,7 @@ if ($progressExit -eq 0) {
     "-ResultsCsv", $ResultsCsv,
     "-OutputJson", $ProfileJson
   )
-  & powershell @sealArgs
+  & $PowerShellExe @sealArgs
 
   if ($LASTEXITCODE -ne 0) {
     throw "Physical profile sealing failed."
@@ -96,7 +111,7 @@ if ($progressExit -eq 0) {
     "-ArchivePath", $ArchivePath,
     "-OutputDir", $PilotOut
   )
-  & powershell @pilotArgs
+  & $PowerShellExe @pilotArgs
 
   if ($LASTEXITCODE -ne 0) {
     throw "Physical pilot package build failed."
