@@ -162,6 +162,27 @@ foreach ($file in Get-ChildItem $ReleaseDir -Recurse -File) {
   }
 }
 
+$geometryDir = Join-Path $ReleaseDir "06_EVIDENCE\FINAL_GEOMETRY"
+if (-not (Test-Path $geometryDir)) {
+  throw "Final geometry evidence directory missing."
+}
+$geometryReceipts = @(Get-ChildItem $geometryDir -Filter "*.json" -File)
+if ($geometryReceipts.Count -ne 38) {
+  throw "Expected 38 final geometry receipts, found $($geometryReceipts.Count)."
+}
+foreach ($receiptFile in $geometryReceipts) {
+  $geometry = Get-Content -Raw $receiptFile.FullName | ConvertFrom-Json
+  if ($geometry.positive_shells -ne 1) {
+    throw "Final geometry receipt has invalid positive-shell count: $($receiptFile.Name)"
+  }
+  if (-not $geometry.watertight_edge_test) {
+    throw "Final geometry receipt is not watertight: $($receiptFile.Name)"
+  }
+  if ($geometry.degenerate_triangle_count -ne 0) {
+    throw "Final geometry receipt contains degenerate triangles: $($receiptFile.Name)"
+  }
+}
+
 $manifestPath = Join-Path $ReleaseDir "00_RELEASE\FINAL_MANIFEST.csv"
 if (-not (Test-Path $manifestPath)) { throw "FINAL_MANIFEST.csv missing." }
 
@@ -231,6 +252,7 @@ $receipt = [ordered]@{
   show_module_ids = $expectedShowIds
   donor_documentation = "PASS"
   packaged_source_lock = "PASS"
+  final_geometry_receipts = $geometryReceipts.Count
   validation_scope = "PASS"
   manifest_rows = $manifest.Count
   sha256sum_entries = $sumLines.Count
