@@ -6,38 +6,18 @@ echo ============================================================
 echo  HAP PHYSICAL WORKBENCH
 echo ============================================================
 echo.
-echo Enter the full path to your local lego-umbau.zip archive.
-echo Example: C:\Users\Name\Downloads\lego-umbau.zip
+echo Starting the guided physical-test menu...
 echo.
-set /p HAP_ARCHIVE=Archive path: 
 
-if "%HAP_ARCHIVE%"=="" (
-  echo ERROR: No archive path entered.
-  pause
-  exit /b 1
-)
-
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0RUN_PHYSICAL_CAMPAIGN.ps1" ^
-  -ArchivePath "%HAP_ARCHIVE%" ^
-  -WorkDir "%~dp0WORK" ^
-  -SkipPackBuild
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0PHYSICAL_WORKBENCH_MENU.ps1" -WorkbenchDir "%~dp0"
 
 set HAP_EXIT=%ERRORLEVEL%
-
-if "%HAP_EXIT%"=="0" (
-  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0REFRESH_PHYSICAL_WORKBENCH.ps1" -WorkbenchDir "%~dp0"
-)
-
 echo.
 if "%HAP_EXIT%"=="0" (
-  echo Workbench finished without a script error.
-  echo Next-print queue and dashboard were refreshed.
+  echo HAP Physical Workbench closed normally.
 ) else (
-  echo Workbench returned exit code %HAP_EXIT%.
+  echo HAP Physical Workbench returned exit code %HAP_EXIT%.
 )
-echo.
-echo Working data is stored in:
-echo   %~dp0WORK
 echo.
 pause
 exit /b %HAP_EXIT%
