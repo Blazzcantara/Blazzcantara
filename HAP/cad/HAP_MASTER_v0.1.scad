@@ -178,8 +178,12 @@ module lego_to_gt_adapter(nx=4, ny=4, xy_scale=1.0, male_flat=29.78, transition_
                         hex2d(gt_support_outer_flat);
             }
 
-            translate([0,0,z0+0.50])
-                hex_prism(inner_flat,transition_h+gt_platform_h+gt_ring_h+2.0,0);
+            // Keep enough material around narrow bases. On a 2x2 footprint the
+            // old through-relief removed the complete transition for several mm
+            // and produced two disconnected solids.
+            if (min(w,d) > inner_flat + 4.0)
+                translate([0,0,z0+0.50])
+                    hex_prism(inner_flat,transition_h+gt_platform_h+gt_ring_h+2.0,0);
         }
 
         gt_support_top(male_flat,z1);
@@ -385,9 +389,12 @@ module lego_to_core_cap(
                         hex2d(gt_support_outer_flat);
             }
 
-            // Internal relief keeps the transition light while leaving a load path.
-            translate([0,0,z0+0.8])
-                hex_prism(gt_support_outer_flat-7.0,transition_h+0.5,0,0);
+            // Internal relief keeps wider transitions light. The 2x4 variant
+            // stays solid because the previous relief completely separated the
+            // lower LEGO foot from the upper core receiver.
+            if (nx >= 4)
+                translate([0,0,z0+0.8])
+                    hex_prism(gt_support_outer_flat-7.0,transition_h+0.5,0,0);
         }
 
         core_socket_top(
@@ -603,7 +610,7 @@ module cross_outrigger_core(
 // -------------------------
 module donor_pad_hex(
     pad_flat=gt_tile_flat,
-    pad_h=2.40,
+    pad_h=full_hex_shell_h,
     core_clearance=0.30
 ) {
     socket_flat = core_nominal_flat + core_clearance;
@@ -611,15 +618,21 @@ module donor_pad_hex(
     difference() {
         hex_prism(pad_flat,pad_h,0,0);
 
+        // Production-style top-opening HAP core socket.
+        translate([0,0,pad_h-core_h])
+            hex_prism(socket_flat,core_h+eps,0,0);
+
+        // Small underside relief limits elephant-foot interference without
+        // turning the receiver into a through-hole.
         translate([0,0,-eps])
-            hex_prism(socket_flat,min(core_h,pad_h)+2*eps,0,0);
+            hex_prism(core_nominal_flat-3.0,1.00+eps,0,0);
     }
 }
 
 module donor_pad_rect(
     w=48.0,
-    d=24.0,
-    pad_h=2.40,
+    d=36.0,
+    pad_h=full_hex_shell_h,
     core_clearance=0.30
 ) {
     socket_flat = core_nominal_flat + core_clearance;
@@ -627,8 +640,15 @@ module donor_pad_rect(
     difference() {
         centered_cube_xy(w,d,pad_h,0);
 
+        // The old 48x24 through-cut was narrower than the HAP core socket and
+        // split the pad into two separate pieces. A 48x36 receiver preserves a
+        // continuous perimeter and uses the same top-opening socket depth as
+        // the production carriers.
+        translate([0,0,pad_h-core_h])
+            hex_prism(socket_flat,core_h+eps,0,0);
+
         translate([0,0,-eps])
-            hex_prism(socket_flat,min(core_h,pad_h)+2*eps,0,0);
+            hex_prism(core_nominal_flat-3.0,1.00+eps,0,0);
     }
 }
 
