@@ -59,7 +59,9 @@ jobs:
 
             if ($errors.Count -gt 0) {
               Write-Host "PowerShell parse errors in $file" -ForegroundColor Red
-              $errors | ForEach-Object { Write-Host $_.Message -ForegroundColor Red }
+              $errors | ForEach-Object {
+              Write-Host ("Line {0}, Col {1}: {2} :: {3}" -f $_.Extent.StartLineNumber,$_.Extent.StartColumnNumber,$_.Message,$_.Extent.Text) -ForegroundColor Red
+            }
               $failed = $true
             }
           }
@@ -426,7 +428,9 @@ jobs:
 
             if ($errors.Count -gt 0) {
               Write-Host "PowerShell parse errors in $file" -ForegroundColor Red
-              $errors | ForEach-Object { Write-Host $_.Message -ForegroundColor Red }
+              $errors | ForEach-Object {
+              Write-Host ("Line {0}, Col {1}: {2} :: {3}" -f $_.Extent.StartLineNumber,$_.Extent.StartColumnNumber,$_.Message,$_.Extent.Text) -ForegroundColor Red
+            }
               $failed = $true
             }
           }
