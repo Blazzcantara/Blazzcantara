@@ -440,7 +440,9 @@ jobs:
 
             python3 HAP/tools/STL_COMPONENT_AUDIT.py "$OUT" \
               --expect-components 1 \
-              --require-watertight
+              --expect-positive-shells 1 \
+              --require-watertight \
+              --require-no-degenerate
           done
 
           echo "Native connector synthetic smoke PASS"
