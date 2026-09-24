@@ -32,6 +32,7 @@ if (Test-Path $PackOut) { Remove-Item $PackOut -Recurse -Force }
 
 New-Item -ItemType Directory -Force -Path $Stage | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $Stage "WORK") | Out-Null
+$StageResolved = (Resolve-Path $Stage).Path
 
 $packArgs = @(
   "-NoProfile",
@@ -147,7 +148,7 @@ $dashArgs = @(
 if ($LASTEXITCODE -ne 0) { throw "Initial dashboard build failed." }
 
 $manifest = foreach ($file in (Get-ChildItem $Stage -Recurse -File | Sort-Object FullName)) {
-  $relative = $file.FullName.Substring($Stage.Length).TrimStart([char[]]"\/")
+  $relative = $file.FullName.Substring($StageResolved.Length).TrimStart([char[]]"\/")
   [pscustomobject]@{
     relative_path = $relative
     size_bytes = $file.Length
