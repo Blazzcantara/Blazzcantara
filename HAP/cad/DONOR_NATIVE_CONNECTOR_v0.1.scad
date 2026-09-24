@@ -43,8 +43,11 @@ module native_connector() {
 module hap_core_bridge() {
     union() {
         // Lower body inserts into the provisional HAP core socket.
+        // HAP carrier sockets use the master-core orientation rot=0.
+        // The previous 30-degree rotation produced a geometrically valid STL
+        // but an incompatible hex interface at the same nominal flat size.
         translate([0,0,-hap_core_h+bridge_overlap])
-            hex_prism(hap_core_flat,hap_core_h,0,30);
+            hex_prism(hap_core_flat,hap_core_h,0,0);
 
         // Native donor connector remains the upper tile-facing interface.
         native_connector();
