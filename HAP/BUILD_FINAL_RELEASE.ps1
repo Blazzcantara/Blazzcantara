@@ -318,7 +318,10 @@ $docs = @(
   "DONOR_CONVERSION_RULES_v0.1.md",
   "donors\DONOR_ATTRIBUTION_v0.1.md",
   "donors\NATIVE_CONNECTOR_SSOT_v0.1.md",
-  "donors\PILOT_SHOW_MODULES_v0.1.md"
+  "donors\PILOT_SHOW_MODULES_v0.1.md",
+  "cad\HAP_MASTER_v0.1.scad",
+  "cad\DONOR_NATIVE_CONNECTOR_v0.1.scad",
+  "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
 )
 
 foreach ($doc in $docs) {
