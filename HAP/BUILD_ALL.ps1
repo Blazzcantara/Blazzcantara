@@ -5,9 +5,14 @@ $Cad = Join-Path $Root "cad\HAP_MASTER_v0.1.scad"
 $Out = Join-Path $Root "out"
 $SmokeOut = Join-Path $Root "smoke_out"
 $Converter = Join-Path $Root "cad\DONOR_CONVERTER_v0.1.scad"
+$NativeConverter = Join-Path $Root "cad\DONOR_NATIVE_CONNECTOR_v0.1.scad"
 $SmokeFixture = Join-Path $Root "cad\DONOR_SMOKE_FIXTURE.scad"
+$AuditTool = Join-Path $Root "tools\STL_COMPONENT_AUDIT.py"
+$GeometryAudit = Join-Path $Root "geometry_audit"
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 New-Item -ItemType Directory -Force -Path $SmokeOut | Out-Null
+if (Test-Path $GeometryAudit) { Remove-Item $GeometryAudit -Recurse -Force }
+New-Item -ItemType Directory -Force -Path $GeometryAudit | Out-Null
 
 # Remove stale STL outputs before counting. Re-running the local build must not
 # inherit files from an older HAP revision.
@@ -40,6 +45,23 @@ if (-not $OpenSCAD) {
 
 if (-not (Test-Path $OpenSCAD) -and -not (Get-Command $OpenSCAD -ErrorAction SilentlyContinue)) {
   throw "OpenSCAD could not be located after installation."
+}
+
+$Python = $null
+$PythonPrefix = @()
+foreach ($candidate in @("python","python3","py")) {
+  $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+  if ($cmd) {
+    $Python = $cmd.Source
+    if ($candidate -eq "py") { $PythonPrefix = @("-3") }
+    break
+  }
+}
+if (-not $Python) {
+  throw "Python 3 not found. It is required for the full STL geometry audit."
+}
+if (-not (Test-Path $AuditTool)) {
+  throw "STL geometry audit tool missing: $AuditTool"
 }
 
 function Build-Part(
@@ -145,6 +167,26 @@ if ($Count -ne 47) {
   throw "Expected 47 STL outputs, found $Count"
 }
 
+# Deep geometry gate for every generated HAP STL.
+foreach ($Stl in (Get-ChildItem $Out -Filter "*.stl" -File | Sort-Object Name)) {
+  $JsonOut = Join-Path $GeometryAudit ($Stl.BaseName + ".json")
+  $AuditArgs = @()
+  $AuditArgs += $PythonPrefix
+  $AuditArgs += @(
+    $AuditTool,
+    $Stl.FullName,
+    "--json-out", $JsonOut,
+    "--expect-positive-shells", "1",
+    "--require-watertight",
+    "--require-no-degenerate"
+  )
+
+  & $Python @AuditArgs
+  if ($LASTEXITCODE -ne 0) {
+    throw "STL geometry audit failed: $($Stl.Name)"
+  }
+}
+
 # HAP-016 synthetic donor-converter smoke test
 $SyntheticDonor = Join-Path $SmokeOut "SYNTHETIC_DONOR.stl"
 & $OpenSCAD -o $SyntheticDonor $SmokeFixture
@@ -188,30 +230,57 @@ Smoke STL count: $SmokeCount
 Reality state: CI_GEOMETRY_PASS_ONLY
 "@ | Set-Content -Encoding UTF8 -Path $SmokeReport
 
-$Zip = Join-Path $Root "HAP_v0.1_DONOR_BATCH_QA.zip"
+# Native connector synthetic smoke parity with CI.
+$NativeSourceSafe = (Resolve-Path $SyntheticDonor).Path.Replace("\","/")
+foreach ($Mode in @("CONNECTOR_ONLY","CORE_BRIDGE")) {
+  $NativeSmoke = Join-Path $SmokeOut ("NATIVE_" + $Mode + ".stl")
+  $NativeArgs = @(
+    "-o", $NativeSmoke,
+    "-D", "DONOR_FILE=`"$NativeSourceSafe`"",
+    "-D", "MODE=`"$Mode`"",
+    "-D", "CONNECTOR_SCALE=1.000",
+    $NativeConverter
+  )
+  & $OpenSCAD @NativeArgs
+  if ($LASTEXITCODE -ne 0 -or -not (Test-Path $NativeSmoke)) {
+    throw "Native connector smoke test failed for $Mode."
+  }
+
+  $NativeAuditArgs = @()
+  $NativeAuditArgs += $PythonPrefix
+  $NativeAuditArgs += @(
+    $AuditTool,
+    $NativeSmoke,
+    "--expect-positive-shells", "1",
+    "--require-watertight",
+    "--require-no-degenerate"
+  )
+  & $Python @NativeAuditArgs
+  if ($LASTEXITCODE -ne 0) {
+    throw "Native connector geometry audit failed for $Mode."
+  }
+}
+
+$Zip = Join-Path $Root "HAP_v0.1_PHYSICAL_WORKBENCH.zip"
 if (Test-Path $Zip) { Remove-Item $Zip -Force }
 
+# Current cumulative source + evidence package. Generated user work directories
+# are intentionally excluded.
 $PackageItems = @(
   (Join-Path $Out "*"),
-  (Join-Path $Root "README.md"),
-  (Join-Path $Root "INTERFACE_SSOT_v0.1.md"),
-  (Join-Path $Root "PHYSICAL_TEST_MATRIX_v0.1.md"),
-  (Join-Path $Root "STRUCTURAL_TEST_MATRIX_v0.1.md"),
-  (Join-Path $Root "TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md"),
-  (Join-Path $Root "DONOR_CONVERSION_RULES_v0.1.md"),
-  (Join-Path $Root "BUILD_DONOR_CONVERSION.ps1"),
-  (Join-Path $Root "BUILD_DONOR_BATCH.ps1"),
-  (Join-Path $Root "CI_DONOR_SMOKE_REPORT.txt"),
-  (Join-Path $Root "donors\DONOR_REGISTRY_v0.1.csv"),
-  (Join-Path $Root "donors\DONOR_RECIPES_v0.1.csv"),
-  (Join-Path $Root "donors\DONOR_ATTRIBUTION_v0.1.md"),
-  (Join-Path $Root "donors\DONOR_PIPELINE_v0.1.md"),
-  (Join-Path $Root "donors\DONOR_TEST_MATRIX_v0.1.md"),
-  (Join-Path $Root "donors\DONOR_BATCH_QA_GUIDE_v0.1.md"),
-  (Join-Path $Root "cad\DONOR_CONVERTER_v0.1.scad"),
-  (Join-Path $Root "cad\DONOR_SMOKE_FIXTURE.scad"),
-  (Join-Path $Root "LICENSE.md"),
-  (Join-Path $Root "cad\HAP_MASTER_v0.1.scad")
+  (Join-Path $GeometryAudit "*"),
+  (Join-Path $Root "calibration"),
+  (Join-Path $Root "ci"),
+  (Join-Path $Root "donors"),
+  (Join-Path $Root "pilot"),
+  (Join-Path $Root "show"),
+  (Join-Path $Root "structural"),
+  (Join-Path $Root "tools"),
+  (Join-Path $Root "cad"),
+  (Join-Path $Root "*.ps1"),
+  (Join-Path $Root "*.md"),
+  (Join-Path $Root "*.cmd"),
+  (Join-Path $Root "*.txt")
 )
 Compress-Archive -Path $PackageItems -DestinationPath $Zip
 
