@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
-"""Minimal STL integrity audit for HAP generated parts.
+"""Dependency-free STL integrity audit for HAP generated parts.
 
-No third-party Python packages required.
-Supports both binary and ASCII STL output.
+Supports binary and ASCII STL.
+Distinguishes:
+- watertight surface shells,
+- positive-volume outer solid shells,
+- negative-volume cavity shells,
+- degenerate triangles.
+
+A valid printable solid may contain one positive outer shell plus one or more
+negative cavity shells. Multiple positive shells usually indicate disconnected
+physical bodies in one STL.
 """
 
 from __future__ import annotations
@@ -58,7 +66,11 @@ def read_ascii_stl_bytes(data: bytes):
             continue
 
         parts = line.split()
-        if len(parts) == 5 and parts[0].lower() == "facet" and parts[1].lower() == "normal":
+        if (
+            len(parts) == 5
+            and parts[0].lower() == "facet"
+            and parts[1].lower() == "normal"
+        ):
             current_normal = tuple(float(v) for v in parts[2:5])
         elif len(parts) == 4 and parts[0].lower() == "vertex":
             vertices.append(tuple(float(v) for v in parts[1:4]))
@@ -91,40 +103,73 @@ def read_stl(path: Path):
     return read_ascii_stl_bytes(data), "ascii"
 
 
-def vkey(v, tolerance):
-    return tuple(int(round(float(x) / tolerance)) for x in v)
+def vkey(vertex, tolerance):
+    return tuple(int(round(float(value) / tolerance)) for value in vertex)
+
+
+def triangle_area(vertices):
+    a, b, c = vertices
+    ab = (b[0] - a[0], b[1] - a[1], b[2] - a[2])
+    ac = (c[0] - a[0], c[1] - a[1], c[2] - a[2])
+    cross = (
+        ab[1] * ac[2] - ab[2] * ac[1],
+        ab[2] * ac[0] - ab[0] * ac[2],
+        ab[0] * ac[1] - ab[1] * ac[0],
+    )
+    return 0.5 * math.sqrt(sum(value * value for value in cross))
+
+
+def signed_triangle_volume(vertices):
+    a, b, c = vertices
+    cross_bc = (
+        b[1] * c[2] - b[2] * c[1],
+        b[2] * c[0] - b[0] * c[2],
+        b[0] * c[1] - b[1] * c[0],
+    )
+    return (
+        a[0] * cross_bc[0]
+        + a[1] * cross_bc[1]
+        + a[2] * cross_bc[2]
+    ) / 6.0
 
 
 def audit(triangles, tolerance):
-    vertex_faces = defaultdict(list)
+    edge_faces = defaultdict(list)
     edge_counts = defaultdict(int)
 
     mins = [math.inf, math.inf, math.inf]
     maxs = [-math.inf, -math.inf, -math.inf]
 
     face_keys = []
+    degenerate_triangles = 0
+
     for face_index, (_, vertices, _) in enumerate(triangles):
-        keys = [vkey(v, tolerance) for v in vertices]
+        keys = [vkey(vertex, tolerance) for vertex in vertices]
         face_keys.append(keys)
 
-        for v, key in zip(vertices, keys):
-            vertex_faces[key].append(face_index)
+        if triangle_area(vertices) <= tolerance * tolerance:
+            degenerate_triangles += 1
+
+        for vertex in vertices:
             for axis in range(3):
-                mins[axis] = min(mins[axis], float(v[axis]))
-                maxs[axis] = max(maxs[axis], float(v[axis]))
+                mins[axis] = min(mins[axis], float(vertex[axis]))
+                maxs[axis] = max(maxs[axis], float(vertex[axis]))
 
         for a, b in ((keys[0], keys[1]), (keys[1], keys[2]), (keys[2], keys[0])):
             edge = (a, b) if a <= b else (b, a)
             edge_counts[edge] += 1
+            edge_faces[edge].append(face_index)
 
+    # Surface-shell connectivity is edge-based. Merely touching at a vertex does
+    # not make two printable shells one physical body.
     adjacency = [set() for _ in triangles]
-    for faces in vertex_faces.values():
+    for faces in edge_faces.values():
         if len(faces) > 1:
             for face in faces:
                 adjacency[face].update(other for other in faces if other != face)
 
     seen = set()
-    component_sizes = []
+    shell_faces = []
 
     for start in range(len(triangles)):
         if start in seen:
@@ -132,30 +177,56 @@ def audit(triangles, tolerance):
 
         stack = [start]
         seen.add(start)
-        size = 0
+        faces = []
 
         while stack:
             current = stack.pop()
-            size += 1
+            faces.append(current)
             for other in adjacency[current]:
                 if other not in seen:
                     seen.add(other)
                     stack.append(other)
 
-        component_sizes.append(size)
+        shell_faces.append(faces)
+
+    shell_volumes = []
+    shell_triangles = []
+
+    for faces in shell_faces:
+        volume = 0.0
+        for face_index in faces:
+            volume += signed_triangle_volume(triangles[face_index][1])
+        shell_volumes.append(volume)
+        shell_triangles.append(len(faces))
+
+    volume_epsilon = max(tolerance ** 3, 1e-12)
+    positive_shells = sum(volume > volume_epsilon for volume in shell_volumes)
+    negative_shells = sum(volume < -volume_epsilon for volume in shell_volumes)
+    near_zero_shells = len(shell_volumes) - positive_shells - negative_shells
 
     bad_edges = sum(1 for count in edge_counts.values() if count != 2)
-    extents = [maxs[i] - mins[i] for i in range(3)]
+    boundary_edges = sum(1 for count in edge_counts.values() if count == 1)
+    nonmanifold_edges = sum(1 for count in edge_counts.values() if count > 2)
+    extents = [maxs[index] - mins[index] for index in range(3)]
 
     return {
         "triangles": len(triangles),
-        "components": len(component_sizes),
-        "component_triangles_desc": sorted(component_sizes, reverse=True),
+        "components": len(shell_faces),
+        "surface_shells": len(shell_faces),
+        "component_triangles_desc": sorted(shell_triangles, reverse=True),
+        "shell_signed_volume_mm3": [round(value, 6) for value in shell_volumes],
+        "positive_shells": positive_shells,
+        "negative_shells": negative_shells,
+        "near_zero_shells": near_zero_shells,
+        "net_signed_volume_mm3": round(sum(shell_volumes), 6),
         "watertight_edge_test": bad_edges == 0,
         "non_two_manifold_edge_count": bad_edges,
-        "bbox_min_mm": [round(v, 6) for v in mins],
-        "bbox_max_mm": [round(v, 6) for v in maxs],
-        "bbox_extent_mm": [round(v, 6) for v in extents],
+        "boundary_edge_count": boundary_edges,
+        "nonmanifold_edge_count": nonmanifold_edges,
+        "degenerate_triangle_count": degenerate_triangles,
+        "bbox_min_mm": [round(value, 6) for value in mins],
+        "bbox_max_mm": [round(value, 6) for value in maxs],
+        "bbox_extent_mm": [round(value, 6) for value in extents],
         "weld_tolerance_mm": tolerance,
     }
 
@@ -166,7 +237,9 @@ def main():
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--tolerance", type=float, default=1e-5)
     parser.add_argument("--expect-components", type=int)
+    parser.add_argument("--expect-positive-shells", type=int)
     parser.add_argument("--require-watertight", action="store_true")
+    parser.add_argument("--require-no-degenerate", action="store_true")
     args = parser.parse_args()
 
     triangles, stl_format = read_stl(args.stl)
@@ -181,9 +254,20 @@ def main():
     print(json.dumps(result, indent=2))
 
     failed = False
+
     if args.expect_components is not None and result["components"] != args.expect_components:
         failed = True
+
+    if (
+        args.expect_positive_shells is not None
+        and result["positive_shells"] != args.expect_positive_shells
+    ):
+        failed = True
+
     if args.require_watertight and not result["watertight_edge_test"]:
+        failed = True
+
+    if args.require_no_degenerate and result["degenerate_triangle_count"] != 0:
         failed = True
 
     raise SystemExit(1 if failed else 0)
