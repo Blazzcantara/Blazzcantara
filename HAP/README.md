@@ -238,7 +238,8 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - contains staged calibration files, working CSV, next-print queue and dashboard
 - includes required operator scripts, CAD helpers and STL audit tool
 - Windows entry point: START_HAP_PHYSICAL.cmd
-- launcher refreshes next-print queue and dashboard after each campaign run
+- guided menu supports refresh, physical result recording, campaign promotion, checkpointing and dashboard opening
+- no command typing is required for the normal Windows physical-test loop
 
 ## Current automated build
 
