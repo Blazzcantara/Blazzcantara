@@ -9,6 +9,8 @@ LS-PL-0204,PLATE,PLATE_2x4,2,4,3.20,FULL,Low-profile structural plate
 LS-PL-0404,PLATE,PLATE_4x4,4,4,3.20,STARTER,Medium adapter base plate
 LS-PL-0406,PLATE,PLATE_4x6,4,6,3.20,FULL,Rectangular adapter base plate
 LS-PL-0606,PLATE,PLATE_6x6,6,6,3.20,STARTER,Full HAP support base plate
+LS-PL-0702,PLATE,PLATE_7x2,7,2,3.20,STARTER,Exact centered stud grid for S40 dual-foot support
+LS-PL-0707,PLATE,PLATE_7x7,7,7,3.20,FULL,Exact low-profile centered base for S40 cross-outrigger
 LS-PL-0808,PLATE,PLATE_8x8,8,8,3.20,STARTER,Wide foundation plate
 LS-RI-0202-H2,RISER,RISER_2x2_H2,2,2,19.20,STARTER,Fast two-brick height change
 LS-RI-0202-H3,RISER,RISER_2x2_H3,2,2,28.80,STARTER,Fast three-brick height change
@@ -19,8 +21,10 @@ LS-TO-0202-H10,TOWER,TOWER_2x2_H10,2,2,96.00,STARTER,Tall compact GraviTrax supp
 LS-TO-0204-H10,TOWER,TOWER_2x4_H10,2,4,96.00,FULL,Tall rectangular support
 LS-TO-0404-H5,TOWER,TOWER_4x4_H5,4,4,48.00,FULL,Wide medium-height tower
 LS-SU-0606-H1,SUPPORT,FOUNDATION_6x6_H1,6,6,9.60,STARTER,Wide base for HAP carriers
+LS-SU-0707-H1,SUPPORT,FOUNDATION_7x7_H1,7,7,9.60,STARTER,Exact sturdy centered base for S40 cross-outrigger
 LS-SU-0808-H1,SUPPORT,FOUNDATION_8x8_H1,8,8,9.60,FULL,Maximum-area foundation
 LS-SU-0206-H5,SUPPORT,BRIDGE_SUPPORT_2x6_H5,2,6,48.00,FULL,Narrow tall bridge pier
-LS-SU-0408-H3,SUPPORT,BRIDGE_SUPPORT_4x8_H3,4,8,28.80,STARTER,Wide bridge pier
+LS-SU-0408-H3,SUPPORT,BRIDGE_SUPPORT_4x8_H3,4,8,28.80,STARTER,Wide 8x4 bridge pier
+LS-SU-1004-H3,SUPPORT,BRIDGE_SUPPORT_10x4_H3,10,4,28.80,STARTER,Exact 10x4 carrier support for S40 bridge
 LS-SU-0606-H3,SUPPORT,CROSS_SUPPORT_6x6_H3,6,6,28.80,FULL,Wide anti-tip center support
 LS-SU-0606-H2,SUPPORT,PLATFORM_BLOCK_6x6_H2,6,6,19.20,FULL,Stackable HAP platform block

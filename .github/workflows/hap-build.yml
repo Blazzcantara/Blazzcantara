@@ -290,10 +290,77 @@ jobs:
           $fullCount = (Get-ChildItem "./HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1" -Recurse -Filter "*.stl" -File).Count
           $starterCount = (Get-ChildItem "./HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1" -Recurse -Filter "*.stl" -File).Count
 
-          if ($fullCount -ne 25) { throw "Expected 25 full structural STLs, found $fullCount." }
-          if ($starterCount -ne 12) { throw "Expected 12 starter STLs, found $starterCount." }
+          if ($fullCount -ne 29) { throw "Expected 29 full structural STLs, found $fullCount." }
+          if ($starterCount -ne 15) { throw "Expected 15 starter STLs, found $starterCount." }
 
-          Write-Host "LEGO Structural Pack PASS: 25 full / 12 starter" -ForegroundColor Green
+          Write-Host "LEGO Structural Pack PASS: 29 full / 15 starter" -ForegroundColor Green
+
+      - name: Full pre-print system audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 HAP/tools/AUDIT_PREPRINT_SYSTEM.py \
+            --repo-root . \
+            --output-dir HAP/preprint_audit_out
+
+          PKG="HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2"
+          ZIP="HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip"
+
+          test -f "$PKG/03_AUDIT/PREPRINT_AUDIT.json"
+          test -f "$PKG/03_AUDIT/PREPRINT_MANIFEST.csv"
+
+          COUNT=$(find "$PKG" -name '*.stl' | wc -l)
+          test "$COUNT" -eq 55
+
+          (
+            cd HAP/preprint_audit_out
+            zip -qr HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip \
+              HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2
+          )
+
+          test -s "$ZIP"
+          sha256sum "$ZIP" > "$ZIP.sha256"
+
+          rm -rf HAP/preprint_audit_out/_roundtrip
+          mkdir -p HAP/preprint_audit_out/_roundtrip
+          unzip -q "$ZIP" -d HAP/preprint_audit_out/_roundtrip
+
+          VERIFY_ROOT="HAP/preprint_audit_out/_roundtrip/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2"
+          VERIFY_COUNT=$(find "$VERIFY_ROOT" -name '*.stl' | wc -l)
+          test "$VERIFY_COUNT" -eq 55
+
+          (
+            cd "$VERIFY_ROOT"
+            sha256sum -c SHA256SUMS.txt
+          )
+
+          rm -rf HAP/preprint_audit_out/_roundtrip
+          echo "Pre-print full audit + ZIP round-trip PASS"
+
+      - name: Build complete audited no-Technic print kit
+        shell: pwsh
+        run: |
+          ./HAP/BUILD_COMPLETE_PRINT_KIT.ps1 `
+            -HapOutDir "./HAP/out" `
+            -StructuralPackDir "./HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1" `
+            -OutputDir "./HAP/complete_print_out"
+
+          $zip = "./HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2.zip"
+          $stage = "./HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2"
+
+          if (-not (Test-Path $zip)) { throw "Complete audited no-Technic ZIP missing." }
+
+          $count = (Get-ChildItem $stage -Recurse -Filter "*.stl" -File).Count
+          if ($count -ne 55) { throw "Expected 55 audited public STL files, found $count." }
+
+          $manifest = Import-Csv (Join-Path $stage "STL_MANIFEST.csv")
+          if ($manifest.Count -ne 55) { throw "Expected 55 manifest rows, found $($manifest.Count)." }
+
+          if (-not (Test-Path (Join-Path $stage "PRINT_ORIENTATION_AND_RISK.csv"))) {
+            throw "Print orientation/risk metadata missing."
+          }
+
+          Write-Host "Complete audited public print kit PASS: 55 STL" -ForegroundColor Green
 
       - name: Validate donor registry and recipes
         shell: bash
@@ -415,7 +482,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile HAP/tools/STL_COMPONENT_AUDIT.py
+          python3 -m py_compile HAP/tools/STL_COMPONENT_AUDIT.py HAP/tools/AUDIT_PREPRINT_SYSTEM.py
           echo "Python tool syntax PASS"
 
       - name: Audit source consistency
@@ -452,6 +519,7 @@ jobs:
             "HAP/REFRESH_PHYSICAL_WORKBENCH.ps1",
             "HAP/BUILD_PHYSICAL_WORKBENCH.ps1",
             "HAP/BUILD_DIGITAL_STL_SET.ps1",
+            "HAP/BUILD_COMPLETE_PRINT_KIT.ps1",
             "HAP/PHYSICAL_WORKBENCH_MENU.ps1"
           )
 
@@ -699,3 +767,21 @@ jobs:
             HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1.zip.sha256
             HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1.zip
             HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1.zip.sha256
+
+      - name: Upload pre-print full audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAP-preprint-full-audit-v0.2
+          path: |
+            HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip
+            HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip.sha256
+            HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/03_AUDIT/PREPRINT_AUDIT.json
+            HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/03_AUDIT/PREPRINT_MANIFEST.csv
+            HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/00_PREPRINT_AUDIT_README.md
+      - name: Upload complete audited no-Technic print kit
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAP-complete-audited-no-technic-v0.2
+          path: |
+            HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2.zip
+            HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2.zip.sha256

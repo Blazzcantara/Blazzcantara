@@ -112,6 +112,7 @@ $nativeScale = [double]$profile.selected.NATIVE_CONNECTOR.value
 $candidates = @(
   "openscad.com",
   "openscad.exe",
+  "openscad",
   "C:\Program Files\OpenSCAD\openscad.com",
   "C:\Program Files\OpenSCAD\openscad.exe"
 )

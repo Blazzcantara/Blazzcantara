@@ -5,20 +5,49 @@ param(
   [Parameter(Mandatory=$true)]
   [string]$ArchivePath,
 
-  [string]$OutputDir = ".\\HAP\\physical_pilot_out"
+  [string]$OutputDir = ".\HAP\physical_pilot_out"
 )
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$Cad = Join-Path $Root "cad\\HAP_MASTER_v0.1.scad"
+$Cad = Join-Path $Root "cad\HAP_MASTER_v0.1.scad"
+$NativeCad = Join-Path $Root "cad\DONOR_NATIVE_CONNECTOR_v0.1.scad"
 $NativeBuilder = Join-Path $Root "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
+$InterfaceSsot = Join-Path $Root "INTERFACE_SSOT_v0.1.md"
+$AuditTool = Join-Path $Root "tools\STL_COMPONENT_AUDIT.py"
 
-if (-not (Test-Path $ProfileJson)) { throw "Profile not found: $ProfileJson" }
-if (-not (Test-Path $ArchivePath)) { throw "Archive not found: $ArchivePath" }
-if (-not (Test-Path $Cad)) { throw "HAP master CAD not found." }
-if (-not (Test-Path $NativeCad)) { throw "Native connector CAD not found." }
-if (-not (Test-Path $NativeBuilder)) { throw "Native connector builder not found." }
-if (-not (Test-Path $InterfaceSsot)) { throw "Interface SSOT not found." }
+foreach ($required in @(
+  $ProfileJson,
+  ($ProfileJson + ".sha256"),
+  $ArchivePath,
+  $Cad,
+  $NativeCad,
+  $NativeBuilder,
+  $InterfaceSsot,
+  $AuditTool
+)) {
+  if (-not (Test-Path $required)) {
+    throw "Required pilot source/evidence file not found: $required"
+  }
+}
+
+# Verify the physical-profile sidecar before trusting profile content.
+$profileHash = (Get-FileHash -Algorithm SHA256 $ProfileJson).Hash.ToLowerInvariant()
+$sidecarLine = (Get-Content ($ProfileJson + ".sha256") |
+  Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+  Select-Object -First 1)
+
+if ($sidecarLine -notmatch '^([0-9a-fA-F]{64})  (.+)$') {
+  throw "Malformed physical-profile SHA-256 sidecar."
+}
+$sidecarHash = $Matches[1].ToLowerInvariant()
+$sidecarName = $Matches[2]
+if ($sidecarName -ne [System.IO.Path]::GetFileName($ProfileJson)) {
+  throw "Physical-profile sidecar filename mismatch."
+}
+if ($sidecarHash -ne $profileHash) {
+  throw "Physical-profile SHA-256 sidecar mismatch."
+}
 
 $profile = Get-Content -Raw -Path $ProfileJson | ConvertFrom-Json
 if ($profile.reality_state -ne "INTERFACE_VALUES_PHYSICALLY_SELECTED_PENDING_SYSTEM_PILOT") {
@@ -45,15 +74,27 @@ $coreClearance = [double]$profile.selected.CORE_CLEARANCE.value
 $technicHole = [double]$profile.selected.TECHNIC_HOLE.value
 $nativeScale = [double]$profile.selected.NATIVE_CONNECTOR.value
 
-$candidates = @(
-  "openscad.com",
-  "openscad.exe",
-  "C:\\Program Files\\OpenSCAD\\openscad.com",
-  "C:\\Program Files\\OpenSCAD\\openscad.exe"
-)
+# Revalidate selected values even though the profile is source-locked.
+$allowedLego = @(-0.08,-0.04,0.00,0.04,0.08)
+$allowedGt = @(29.60,29.70,29.78,29.86,29.96)
+$allowedCore = @(0.20,0.30,0.40)
+$allowedTechnic = @(4.80,4.90,5.00,5.10)
+$allowedNative = @(0.996,0.998,1.000,1.002,1.004)
+
+if ($allowedLego -notcontains $legoDelta) { throw "Selected LEGO clutch value is not allowed." }
+if ($allowedGt -notcontains $gtMale) { throw "Selected GT male value is not allowed." }
+if ($allowedCore -notcontains $coreClearance) { throw "Selected core clearance is not allowed." }
+if ($allowedTechnic -notcontains $technicHole) { throw "Selected Technic hole is not allowed." }
+if ($allowedNative -notcontains $nativeScale) { throw "Selected native connector scale is not allowed." }
 
 $OpenSCAD = $null
-foreach ($candidate in $candidates) {
+foreach ($candidate in @(
+  "openscad.com",
+  "openscad.exe",
+  "openscad",
+  "C:\Program Files\OpenSCAD\openscad.com",
+  "C:\Program Files\OpenSCAD\openscad.exe"
+)) {
   try {
     if (Test-Path $candidate) { $OpenSCAD = $candidate; break }
     $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
@@ -62,12 +103,46 @@ foreach ($candidate in $candidates) {
 }
 if (-not $OpenSCAD) { throw "OpenSCAD not found." }
 
+$Python = $null
+$PythonPrefix = @()
+foreach ($candidate in @("python","python3","py")) {
+  $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+  if ($cmd) {
+    $Python = $cmd.Source
+    if ($candidate -eq "py") { $PythonPrefix = @("-3") }
+    break
+  }
+}
+if (-not $Python) { throw "Python 3 not found." }
+
 $Stage = Join-Path $OutputDir "HAP_PHYSICAL_PILOT_READY_v0.1"
 $NativeOut = Join-Path $OutputDir "_native_selected"
-if (Test-Path $Stage) { Remove-Item $Stage -Recurse -Force }
-if (Test-Path $NativeOut) { Remove-Item $NativeOut -Recurse -Force }
+$AuditOut = Join-Path $Stage "AUDIT"
+
+foreach ($path in @($Stage,$NativeOut)) {
+  if (Test-Path $path) { Remove-Item $path -Recurse -Force }
+}
 New-Item -ItemType Directory -Force -Path $Stage | Out-Null
 New-Item -ItemType Directory -Force -Path $NativeOut | Out-Null
+New-Item -ItemType Directory -Force -Path $AuditOut | Out-Null
+
+function Audit-PilotStl([string]$Path) {
+  $json = Join-Path $AuditOut (([System.IO.Path]::GetFileNameWithoutExtension($Path)) + ".json")
+  $args = @()
+  $args += $PythonPrefix
+  $args += @(
+    $AuditTool,
+    $Path,
+    "--json-out", $json,
+    "--expect-positive-shells", "1",
+    "--require-watertight",
+    "--require-no-degenerate"
+  )
+  & $Python @args
+  if ($LASTEXITCODE -ne 0) {
+    throw "Pilot STL geometry audit failed: $Path"
+  }
+}
 
 function Build-PilotPart(
   [string]$Name,
@@ -87,34 +162,32 @@ function Build-PilotPart(
   )
 
   & $OpenSCAD @args
-
   if ($LASTEXITCODE -ne 0) { throw "OpenSCAD failed for $Name" }
   if (-not (Test-Path $dst)) { throw "Missing output: $dst" }
   if ((Get-Item $dst).Length -le 100) { throw "Suspiciously small output: $dst" }
+
+  Audit-PilotStl $dst
 }
 
-Build-PilotPart "HAP_LG4x4_to_GT_SEALED_v0.1" "LG4x4_GT"
-Build-PilotPart "HAP_FULL_HEX_6x6_SEALED_v0.1" "FULL_HEX_6x6"
-Build-PilotPart "HAP_GT_CORE_SEALED_v0.1" "GT_CORE"
-Build-PilotPart "HAP_SKY_CORE_4x4_SEALED_v0.1" "SKY_CORE_4x4"
-Build-PilotPart "HAP_TECHNIC_SIDE_CORE_3H_SEALED_v0.1" "TECHNIC_SIDE_CORE_3H"
+Build-PilotPart "HAP_LG4x4_to_GT_SELECTED_v0.1" "LG4x4_GT"
+Build-PilotPart "HAP_FULL_HEX_6x6_SELECTED_v0.1" "FULL_HEX_6x6"
+Build-PilotPart "HAP_GT_CORE_SELECTED_v0.1" "GT_CORE"
+Build-PilotPart "HAP_SKY_CORE_4x4_SELECTED_v0.1" "SKY_CORE_4x4"
+Build-PilotPart "HAP_TECHNIC_SIDE_CORE_3H_SELECTED_v0.1" "TECHNIC_SIDE_CORE_3H"
 
 & $NativeBuilder -ArchivePath $ArchivePath -OutputDir $NativeOut -Scales @($nativeScale) -Modes @("CORE_BRIDGE")
-
 if ($LASTEXITCODE -ne 0) { throw "Selected native connector bridge build failed." }
 
-$scaleTag = $nativeScale.ToString(
-  "0.000",
-  [System.Globalization.CultureInfo]::InvariantCulture
-)
+$scaleTag = $nativeScale.ToString("0.000",[System.Globalization.CultureInfo]::InvariantCulture)
 $nativeFile = Join-Path $NativeOut ("HAP_NATIVE_CORE_BRIDGE_scale_" + $scaleTag + "_v0.1.stl")
 if (-not (Test-Path $nativeFile)) { throw "Selected native bridge output missing: $nativeFile" }
-Copy-Item $nativeFile -Destination (Join-Path $Stage "HAP_NATIVE_CORE_BRIDGE_SEALED_v0.1.stl")
+
+$selectedNative = Join-Path $Stage "HAP_NATIVE_CORE_BRIDGE_SELECTED_v0.1.stl"
+Copy-Item $nativeFile -Destination $selectedNative
+Audit-PilotStl $selectedNative
 
 Copy-Item $ProfileJson -Destination (Join-Path $Stage "PHYSICAL_PROFILE_v0.1.json")
-if (Test-Path ($ProfileJson + ".sha256")) {
-  Copy-Item ($ProfileJson + ".sha256") -Destination (Join-Path $Stage "PHYSICAL_PROFILE_v0.1.json.sha256")
-}
+Copy-Item ($ProfileJson + ".sha256") -Destination (Join-Path $Stage "PHYSICAL_PROFILE_v0.1.json.sha256")
 
 $readme = @"
 # HAP Physical Pilot Ready v0.1
@@ -136,16 +209,11 @@ Included production candidates:
 - Technic 3-hole side-core support
 - Native donor connector -> HAP core bridge
 
-First show-module pilot:
-1. Straight
-2. Large Curve
-3. S-Curve
+The word SELECTED means the values were selected from real interface evidence.
+It does NOT mean the complete HAP system is physically validated.
 
-Print the native bridge three times or move one bridge between donor tiles.
-
-This package is NOT a final physical release. It exists only after interface
-selection and still requires static fit, structural checks and 10-run rolling
-regression on each of the three pilot show modules.
+This package still requires static fit, structural checks and rolling regression
+before any final physical release.
 "@
 Set-Content -Encoding UTF8 -Path (Join-Path $Stage "README_PHYSICAL_PILOT.md") -Value $readme
 
@@ -167,8 +235,13 @@ $zipPath = Join-Path $OutputDir "HAP_PHYSICAL_PILOT_READY_v0.1.zip"
 if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
 Compress-Archive -Path (Join-Path $Stage "*") -DestinationPath $zipPath
 
+$zipHash = (Get-FileHash -Algorithm SHA256 $zipPath).Hash.ToLowerInvariant()
+"$zipHash  $([System.IO.Path]::GetFileName($zipPath))" |
+  Set-Content -Encoding ASCII -Path ($zipPath + ".sha256")
+
 Write-Host ""
-Write-Host "PASS: sealed-value pilot package generated" -ForegroundColor Green
+Write-Host "PASS: selected-value physical pilot package generated" -ForegroundColor Green
 Write-Host "STLs : $($manifest.Count)"
 Write-Host "ZIP  : $zipPath"
+Write-Host "SHA256: $zipHash"
 Write-Host "State: READY_FOR_PHYSICAL_SYSTEM_PILOT" -ForegroundColor Yellow
