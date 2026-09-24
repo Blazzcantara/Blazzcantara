@@ -337,6 +337,13 @@ STL layout:
 - 05_FALLBACK_DONOR_MOUNTS: 6 fallback mount parts
 
 Expected final STL total: 38
+
+Validation scope:
+- Core adapters use the physically selected interfaces but are not claimed as individually printed variants.
+- Structural parts require individual structural physical PASS.
+- Native connector parts require interface selection plus the first system pilot.
+- Show modules require their rolling physical PASS.
+- Fallback donor mounts are included as digitally audited utility parts and are NOT claimed as donor-specific physical PASS.
 "@
 Set-Content -Encoding UTF8 -Path (Join-Path $Release "00_RELEASE\README_FINAL.md") -Value $releaseReadme
 
@@ -347,11 +354,35 @@ if ($stls.Count -ne 38) {
 
 $manifest = foreach ($file in $stls) {
   $relative = $file.FullName.Substring($ReleaseResolved.Length).TrimStart([char[]]"\/")
+  $topDir = ($relative -split '[\\/]')[0]
+
+  $validationScope = switch ($topDir) {
+    "01_CORE_ADAPTERS" {
+      "INTERFACE_PHYSICALLY_SELECTED_GEOMETRY_AUDITED"
+    }
+    "02_STRUCTURAL" {
+      "STRUCTURAL_PHYSICAL_PASS"
+    }
+    "03_NATIVE_CONNECTOR" {
+      "PHYSICAL_INTERFACE_AND_PILOT_PASS"
+    }
+    "04_SHOW_MODULES" {
+      "ROLLING_PHYSICAL_PASS"
+    }
+    "05_FALLBACK_DONOR_MOUNTS" {
+      "DIGITAL_GEOMETRY_PASS_FALLBACK_NOT_DONOR_SPECIFIC_PHYSICAL"
+    }
+    default {
+      throw "Unexpected final STL directory while building manifest: $topDir"
+    }
+  }
+
   [pscustomobject]@{
     relative_path = $relative
+    category = $topDir
     size_bytes = $file.Length
     sha256 = (Get-FileHash -Algorithm SHA256 $file.FullName).Hash.ToLowerInvariant()
-    reality_state = "PHYSICAL_RELEASE_CANDIDATE"
+    validation_scope = $validationScope
   }
 }
 $manifest | Export-Csv -NoTypeInformation -Encoding UTF8 -Path (Join-Path $Release "00_RELEASE\FINAL_MANIFEST.csv")
