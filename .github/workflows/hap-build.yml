@@ -240,6 +240,24 @@ jobs:
           print("Deep STL audit PASS: 47/47 watertight, one positive solid shell, zero degenerate triangles")
           PY
 
+      - name: Preflight digital STL set builder syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            "HAP/BUILD_DIGITAL_STL_SET.ps1",
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Host $_.Message -ForegroundColor Red }
+            throw "BUILD_DIGITAL_STL_SET.ps1 contains PowerShell parser errors."
+          }
+
+          Write-Host "Digital STL set builder syntax PASS" -ForegroundColor Green
+
       - name: Build audited 47-STL digital set
         shell: pwsh
         run: |
