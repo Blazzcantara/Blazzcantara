@@ -541,6 +541,43 @@ jobs:
             echo "Synthetic-profile pilot refusal PASS"
           fi
 
+          python3 - <<'PY'
+          import csv, pathlib
+          src = pathlib.Path("HAP/calibration/CALIBRATION_RESULTS_CI_FIXTURE_v0.1.csv")
+          dst = pathlib.Path("HAP/ci_calibration/DUPLICATE_VALUE_SHOULD_FAIL.csv")
+          rows = list(csv.DictReader(src.open(encoding="utf-8-sig")))
+          lego = [r for r in rows if r["gate"] == "LEGO_CLUTCH"]
+          assert len(lego) >= 2
+          lego[0]["value"] = lego[1]["value"]
+          with dst.open("w", newline="", encoding="utf-8") as f:
+              w = csv.DictWriter(f, fieldnames=rows[0].keys())
+              w.writeheader()
+              w.writerows(rows)
+          PY
+
+          if pwsh -NoProfile -File HAP/SEAL_PHYSICAL_PROFILE.ps1 \
+            -ResultsCsv HAP/ci_calibration/DUPLICATE_VALUE_SHOULD_FAIL.csv \
+            -OutputJson HAP/ci_calibration/DUPLICATE_VALUE_SHOULD_NOT_SEAL.json \
+            -AllowSyntheticCiFixture; then
+            echo "ERROR: duplicate/missing calibration candidate set unexpectedly sealed"
+            exit 1
+          else
+            echo "Exact calibration candidate-set refusal PASS"
+          fi
+
+          cp HAP/ci_calibration/CI_PROFILE.json HAP/ci_calibration/BAD_SIDECAR_PROFILE.json
+          printf '%064d  BAD_SIDECAR_PROFILE.json\n' 0 > HAP/ci_calibration/BAD_SIDECAR_PROFILE.json.sha256
+
+          if pwsh -NoProfile -File HAP/BUILD_PHYSICAL_PILOT.ps1 \
+            -ProfileJson HAP/ci_calibration/BAD_SIDECAR_PROFILE.json \
+            -ArchivePath HAP/calibration/CALIBRATION_RESULTS_CI_FIXTURE_v0.1.csv \
+            -OutputDir HAP/ci_calibration/bad_sidecar_should_not_build; then
+            echo "ERROR: physical pilot accepted a tampered profile sidecar"
+            exit 1
+          else
+            echo "Physical-profile sidecar tamper refusal PASS"
+          fi
+
       - name: Validate finalization gates
         shell: bash
         run: |
