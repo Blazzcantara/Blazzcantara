@@ -8,6 +8,17 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$HapMasterCad = Join-Path $Root "cad\HAP_MASTER_v0.1.scad"
+$NativeCad = Join-Path $Root "cad\DONOR_NATIVE_CONNECTOR_v0.1.scad"
+$NativeBuilder = Join-Path $Root "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
+$InterfaceSsot = Join-Path $Root "INTERFACE_SSOT_v0.1.md"
+
+foreach ($sourceFile in @($HapMasterCad,$NativeCad,$NativeBuilder,$InterfaceSsot)) {
+  if (-not (Test-Path $sourceFile)) {
+    throw "Physical profile source-lock file missing: $sourceFile"
+  }
+}
 
 if (-not (Test-Path $ResultsCsv)) {
   throw "Results CSV not found: $ResultsCsv"
@@ -138,6 +149,12 @@ $profile = [ordered]@{
   reality_state = $state
   generated_utc = [DateTime]::UtcNow.ToString("o")
   source_results_sha256 = $sourceHash
+  source_lock = [ordered]@{
+    hap_master_sha256 = (Get-FileHash -Algorithm SHA256 $HapMasterCad).Hash.ToLowerInvariant()
+    native_connector_cad_sha256 = (Get-FileHash -Algorithm SHA256 $NativeCad).Hash.ToLowerInvariant()
+    native_connector_builder_sha256 = (Get-FileHash -Algorithm SHA256 $NativeBuilder).Hash.ToLowerInvariant()
+    interface_ssot_sha256 = (Get-FileHash -Algorithm SHA256 $InterfaceSsot).Hash.ToLowerInvariant()
+  }
   selected = $selected
 }
 
