@@ -797,7 +797,7 @@ else if (PART == "DONOR_PAD_HEX")
     donor_pad_hex(gt_tile_flat,2.40,CORE_CLEARANCE);
 
 else if (PART == "DONOR_PAD_RECT")
-    donor_pad_rect(48.0,24.0,2.40,CORE_CLEARANCE);
+    donor_pad_rect(48.0,36.0,2.40,CORE_CLEARANCE);
 
 else if (PART == "DONOR_CORE_MOUNT")
     donor_core_mount(42.0,2.40,0.20);
