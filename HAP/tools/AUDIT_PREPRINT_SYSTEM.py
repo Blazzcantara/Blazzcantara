@@ -33,7 +33,7 @@ HAP_EXPECTED = [
 ]
 
 FORBIDDEN_PRINT_TOKENS = ("CAL_", "TECHNIC", "_0.20_", "_0.40_", "SYNTHETIC", "SMOKE")
-INTERFACE_EXPECTED = {"pitch":8.00,"plate_h":3.20,"wall":1.50,"tube_od":6.50,"tube_id":4.80}
+INTERFACE_EXPECTED = {"pitch":8.00,"gap":0.20,"plate_h":3.20,"wall":1.50,"roof":1.00,"tube_od":6.50,"tube_id":4.80}
 TOL = 0.035
 
 def sha256(path: Path) -> str:
@@ -107,8 +107,10 @@ def main():
 
     pairs={
         "pitch":("lego_pitch","LEGO_PITCH"),
+        "gap":("lego_gap","LEGO_GAP"),
         "plate_h":("lego_plate_h","LEGO_PLATE_H"),
         "wall":("lego_wall","LEGO_WALL"),
+        "roof":("lego_roof","LEGO_ROOF"),
         "tube_od":("lego_tube_od","LEGO_TUBE_OD"),
         "tube_id":("lego_tube_id","LEGO_TUBE_ID"),
     }
@@ -129,7 +131,7 @@ def main():
     tube_wall=(INTERFACE_EXPECTED["tube_od"]-INTERFACE_EXPECTED["tube_id"])/2.0
     max_roof_bridge=max(
         INTERFACE_EXPECTED["pitch"]-INTERFACE_EXPECTED["tube_od"],
-        ((2*INTERFACE_EXPECTED["pitch"]-0.20)-2*INTERFACE_EXPECTED["wall"])/2.0
+        ((2*INTERFACE_EXPECTED["pitch"]-INTERFACE_EXPECTED["gap"])-2*INTERFACE_EXPECTED["wall"])/2.0
         - INTERFACE_EXPECTED["tube_od"]/2.0
     )
     if INTERFACE_EXPECTED["wall"] < 1.20:
@@ -186,6 +188,28 @@ def main():
     if len(catalog)!=29: raise AssertionError(f"Structural catalog expected 29 rows, got {len(catalog)}")
     by_selector={r["selector"]:r for r in catalog}
     if len(by_selector)!=29: raise AssertionError("Structural catalog contains duplicate selector values")
+
+    # Every HAP LEGO-footprint family used by the direct-print set must have a
+    # practical structural mate in the printable underbuild.
+    required_structural_mates = {
+        "BRICK_2x2_H1",          # LG2x2 / compact stacking
+        "BRICK_2x4_H1",          # Sky 2x4 / general stacking
+        "PLATE_4x4",             # LG4x4 / Sky 4x4
+        "PLATE_4x6",             # Sky 4x6
+        "PLATE_6x6",             # Full Hex + offsets / S32 support field
+        "PLATE_7x2",             # S40 dual-foot exact centered stud field
+        "FOUNDATION_7x7_H1",     # S40 cross-outrigger exact field
+        "BRIDGE_SUPPORT_4x8_H3", # 8x4 bridge carrier, rotated as needed
+        "BRIDGE_SUPPORT_10x4_H3",# 10x4 / S40 bridge carrier
+    }
+    missing_mates = sorted(required_structural_mates - set(by_selector))
+    if missing_mates:
+        raise AssertionError(f"Missing printable structural mates for HAP families: {missing_mates}")
+    interface_coverage = {
+        "2x2":"PASS","2x4":"PASS","4x4":"PASS","4x6":"PASS","6x6":"PASS",
+        "S32_dual_foot":"PASS","S40_dual_foot":"PASS","S40_cross":"PASS",
+        "8x4_bridge":"PASS","10x4_bridge":"PASS",
+    }
 
     structural_names=[]
     for mr in structural_manifest:
@@ -303,6 +327,7 @@ def main():
             "support_free_geometry_guard":"PASS",
         },
         "grid_parity_closure":grid_parity,
+        "hap_to_structural_interface_coverage":interface_coverage,
         "printed_top_stud_fit_state":"NOMINAL_4.80_STUD_DELTA_0.00_PHYSICAL_GATE_SKIPPED",
         "final_release_scope_note":"HAP_FINAL_v1.0.0 remains the original 38-part physically-gated scope; LEGO Structural Pack is a 29-part v0.2 pre-print add-on.",
         "warnings":warnings,"physical_fit_sealed":False,
@@ -320,7 +345,7 @@ def main():
         "- 2 real native donor-derived STL files remain a separate addendum","",
         "## Passed checks","",
         "- exact inventory and no-Technic/no-calibration selection",
-        "- 8.00 mm grid SSOT parity",
+        "- 8.00 mm grid plus gap/plate/wall/roof/tube SSOT parity",
         "- 3.20 mm plate / 9.60 mm brick dimensional contract",
         "- 4.80 x 1.80 mm nominal structural top studs",
         "- every selected mesh: exactly one positive shell",
@@ -331,6 +356,7 @@ def main():
         "- structural wall/roof/tube and roof-bridge printability guards",
         "- explicit per-part print orientation metadata",
         "- exact S32/S40/10x4 LEGO-grid support parity closure",
+        "- HAP footprint families have matching printable structural mates",
         "- nominal 0.30 core socket only","",
         "## Physical limitation","",
         "Fit calibration was intentionally skipped. Digital PASS does not prove real LEGO clutch force, real GraviTrax fit, material shrinkage, or structural load.","",
