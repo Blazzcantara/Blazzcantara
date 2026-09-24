@@ -337,6 +337,31 @@ jobs:
           rm -rf HAP/preprint_audit_out/_roundtrip
           echo "Pre-print full audit + ZIP round-trip PASS"
 
+      - name: Build complete audited no-Technic print kit
+        shell: pwsh
+        run: |
+          ./HAP/BUILD_COMPLETE_PRINT_KIT.ps1 `
+            -HapOutDir "./HAP/out" `
+            -StructuralPackDir "./HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1" `
+            -OutputDir "./HAP/complete_print_out"
+
+          $zip = "./HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2.zip"
+          $stage = "./HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2"
+
+          if (-not (Test-Path $zip)) { throw "Complete audited no-Technic ZIP missing." }
+
+          $count = (Get-ChildItem $stage -Recurse -Filter "*.stl" -File).Count
+          if ($count -ne 55) { throw "Expected 55 audited public STL files, found $count." }
+
+          $manifest = Import-Csv (Join-Path $stage "STL_MANIFEST.csv")
+          if ($manifest.Count -ne 55) { throw "Expected 55 manifest rows, found $($manifest.Count)." }
+
+          if (-not (Test-Path (Join-Path $stage "PRINT_ORIENTATION_AND_RISK.csv"))) {
+            throw "Print orientation/risk metadata missing."
+          }
+
+          Write-Host "Complete audited public print kit PASS: 55 STL" -ForegroundColor Green
+
       - name: Validate donor registry and recipes
         shell: bash
         run: |
@@ -494,6 +519,7 @@ jobs:
             "HAP/REFRESH_PHYSICAL_WORKBENCH.ps1",
             "HAP/BUILD_PHYSICAL_WORKBENCH.ps1",
             "HAP/BUILD_DIGITAL_STL_SET.ps1",
+            "HAP/BUILD_COMPLETE_PRINT_KIT.ps1",
             "HAP/PHYSICAL_WORKBENCH_MENU.ps1"
           )
 
@@ -752,3 +778,10 @@ jobs:
             HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/03_AUDIT/PREPRINT_AUDIT.json
             HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/03_AUDIT/PREPRINT_MANIFEST.csv
             HAP/preprint_audit_out/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2/00_PREPRINT_AUDIT_README.md
+      - name: Upload complete audited no-Technic print kit
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAP-complete-audited-no-technic-v0.2
+          path: |
+            HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2.zip
+            HAP/complete_print_out/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2.zip.sha256
