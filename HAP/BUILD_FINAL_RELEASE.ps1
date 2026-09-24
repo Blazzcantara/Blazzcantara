@@ -529,6 +529,62 @@ if (-not (Test-Path $verifySums)) {
 
 foreach ($line in (Get-Content $verifySums | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
   if ($line -notmatch '^([0-9a-fA-F]{64})  (.+)
+
+  $expected = $Matches[1].ToLowerInvariant()
+  $relative = $Matches[2]
+  $file = Join-Path $verifyDir $relative
+  if (-not (Test-Path $file)) {
+    throw "Round-trip verification missing file: $relative"
+  }
+
+  $actual = (Get-FileHash -Algorithm SHA256 $file).Hash.ToLowerInvariant()
+  if ($actual -ne $expected) {
+    throw "Round-trip verification hash mismatch: $relative"
+  }
+}
+
+$verifyStls = @(Get-ChildItem $verifyDir -Recurse -Filter "*.stl" -File)
+if ($verifyStls.Count -ne 38) {
+  throw "Round-trip verification expected 38 STL files, found $($verifyStls.Count)."
+}
+
+Remove-Item $verifyDir -Recurse -Force
+
+Write-Host ""
+Write-Host "PASS: HAP FINAL v1.0.0 generated" -ForegroundColor Green
+Write-Host "Final STLs: 38"
+Write-Host "ZIP: $zipPath"
+Write-Host "SHA256: $zipHash"
+) {
+    throw "Round-trip verification found malformed checksum line: $line"
+  }
+
+  $expected = $Matches[1].ToLowerInvariant()
+  $relative = $Matches[2]
+  $file = Join-Path $verifyDir $relative
+  if (-not (Test-Path $file)) {
+    throw "Round-trip verification missing file: $relative"
+  }
+
+  $actual = (Get-FileHash -Algorithm SHA256 $file).Hash.ToLowerInvariant()
+  if ($actual -ne $expected) {
+    throw "Round-trip verification hash mismatch: $relative"
+  }
+}
+
+$verifyStls = @(Get-ChildItem $verifyDir -Recurse -Filter "*.stl" -File)
+if ($verifyStls.Count -ne 38) {
+  throw "Round-trip verification expected 38 STL files, found $($verifyStls.Count)."
+}
+
+Remove-Item $verifyDir -Recurse -Force
+
+Write-Host ""
+Write-Host "PASS: HAP FINAL v1.0.0 generated" -ForegroundColor Green
+Write-Host "Final STLs: 38"
+Write-Host "ZIP: $zipPath"
+Write-Host "SHA256: $zipHash"
+) {
     throw "Round-trip verification found malformed checksum line: $line"
   }
 
