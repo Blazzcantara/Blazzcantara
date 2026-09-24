@@ -68,6 +68,8 @@ $categories = [ordered]@{
     @{ Name="HAP_LEGO_PLATE_4x4_v0.1"; Part="PLATE_4x4" },
     @{ Name="HAP_LEGO_PLATE_4x6_v0.1"; Part="PLATE_4x6" },
     @{ Name="HAP_LEGO_PLATE_6x6_v0.1"; Part="PLATE_6x6" },
+    @{ Name="HAP_LEGO_PLATE_7x2_v0.1"; Part="PLATE_7x2" },
+    @{ Name="HAP_LEGO_PLATE_7x7_v0.1"; Part="PLATE_7x7" },
     @{ Name="HAP_LEGO_PLATE_8x8_v0.1"; Part="PLATE_8x8" }
   )
   "03_RISERS" = @(
@@ -84,9 +86,11 @@ $categories = [ordered]@{
   )
   "05_HAP_SUPPORTS" = @(
     @{ Name="HAP_LEGO_FOUNDATION_6x6_H1_v0.1"; Part="FOUNDATION_6x6_H1" },
+    @{ Name="HAP_LEGO_FOUNDATION_7x7_H1_v0.1"; Part="FOUNDATION_7x7_H1" },
     @{ Name="HAP_LEGO_FOUNDATION_8x8_H1_v0.1"; Part="FOUNDATION_8x8_H1" },
     @{ Name="HAP_LEGO_BRIDGE_SUPPORT_2x6_H5_v0.1"; Part="BRIDGE_SUPPORT_2x6_H5" },
     @{ Name="HAP_LEGO_BRIDGE_SUPPORT_4x8_H3_v0.1"; Part="BRIDGE_SUPPORT_4x8_H3" },
+    @{ Name="HAP_LEGO_BRIDGE_SUPPORT_10x4_H3_v0.1"; Part="BRIDGE_SUPPORT_10x4_H3" },
     @{ Name="HAP_LEGO_CROSS_SUPPORT_6x6_H3_v0.1"; Part="CROSS_SUPPORT_6x6_H3" },
     @{ Name="HAP_LEGO_PLATFORM_BLOCK_6x6_H2_v0.1"; Part="PLATFORM_BLOCK_6x6_H2" }
   )
@@ -156,12 +160,12 @@ foreach ($category in $categories.Keys) {
   }
 }
 
-if ($manifest.Count -ne 25) {
-  throw "Expected 25 structural STL files, found $($manifest.Count)."
+if ($manifest.Count -ne 29) {
+  throw "Expected 29 structural STL files, found $($manifest.Count)."
 }
 
 $uniqueHashes = @($manifest.sha256 | Sort-Object -Unique)
-if ($uniqueHashes.Count -ne 25) {
+if ($uniqueHashes.Count -ne 29) {
   throw "Structural pack contains duplicate STL payloads."
 }
 
@@ -196,13 +200,13 @@ Nominal interfaces:
 
 Contents:
 - 5 standard bricks
-- 6 plates
+- 8 plates
 - 5 multi-brick risers
 - 3 tall towers
-- 6 HAP-oriented supports
-- total: 25 STL
+- 8 HAP-oriented supports
+- total: 29 STL
 
-All 25 STL files passed:
+All 29 STL files passed:
 - exactly one positive printable solid shell
 - watertight edge topology
 - zero degenerate triangles
@@ -219,13 +223,16 @@ $starterNames = @(
   "HAP_LEGO_BRICK_2x8_H1_v0.1.stl",
   "HAP_LEGO_PLATE_4x4_v0.1.stl",
   "HAP_LEGO_PLATE_6x6_v0.1.stl",
+  "HAP_LEGO_PLATE_7x2_v0.1.stl",
   "HAP_LEGO_PLATE_8x8_v0.1.stl",
   "HAP_LEGO_RISER_2x2_H2_v0.1.stl",
   "HAP_LEGO_RISER_2x2_H3_v0.1.stl",
   "HAP_LEGO_RISER_2x4_H3_v0.1.stl",
   "HAP_LEGO_TOWER_2x2_H10_v0.1.stl",
   "HAP_LEGO_FOUNDATION_6x6_H1_v0.1.stl",
-  "HAP_LEGO_BRIDGE_SUPPORT_4x8_H3_v0.1.stl"
+  "HAP_LEGO_FOUNDATION_7x7_H1_v0.1.stl",
+  "HAP_LEGO_BRIDGE_SUPPORT_4x8_H3_v0.1.stl",
+  "HAP_LEGO_BRIDGE_SUPPORT_10x4_H3_v0.1.stl"
 )
 
 $starterDir = Join-Path $OutputDir "HAP_LEGO_STRUCTURAL_STARTER_v0.1"
@@ -241,15 +248,18 @@ foreach ($name in $starterNames) {
 $starterNote = @"
 # HAP LEGO Structural Starter v0.1
 
-12 high-value structural parts selected from the full 25-part pack.
+15 high-value structural parts selected from the full 29-part pack.
 
 Recommended first use:
 - BRICK 2x4 / 2x8 for normal height construction
 - PLATE 6x6 / 8x8 for broad HAP bases
+- PLATE 7x2 for exact S40 dual-foot alignment
 - RISER 2x2 H2/H3 for fast GraviTrax height changes
 - TOWER 2x2 H10 for tall support columns
 - FOUNDATION 6x6 for wide single-support bases
-- BRIDGE SUPPORT 4x8 H3 for elevated bridge structures
+- FOUNDATION 7x7 for exact S40 cross-outrigger alignment
+- BRIDGE SUPPORT 4x8 H3 for elevated 8x4 bridge structures
+- BRIDGE SUPPORT 10x4 H3 for exact 10x4 / S40 bridge support
 
 Reality: nominal direct-print candidates; physical fit pending.
 "@
@@ -273,8 +283,8 @@ foreach ($zip in @($fullZip,$starterZip)) {
 
 Write-Host ""
 Write-Host "PASS: HAP LEGO Structural Pack generated" -ForegroundColor Green
-Write-Host "Full STLs   : 25"
-Write-Host "Starter STLs: 12"
+Write-Host "Full STLs   : 29"
+Write-Host "Starter STLs: 15"
 Write-Host "Full ZIP    : $fullZip"
 Write-Host "Starter ZIP : $starterZip"
 Write-Host "Reality     : DIGITAL_GEOMETRY_PASS / PHYSICAL_FIT_PENDING" -ForegroundColor Yellow
