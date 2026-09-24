@@ -1,0 +1,16 @@
+recipe_id,level,qty,structural_part,hap_part,result
+R01_LOW_DIRECT,LOW,2,HAP_LEGO_BRICK_2x4_H1_v0.1.stl,HAP_LG4x4_to_GT_nominal_v0.1.stl,Low direct GraviTrax support
+R02_LOW_WIDE,LOW,1,HAP_LEGO_FOUNDATION_6x6_H1_v0.1.stl,HAP_FULL_HEX_6x6_socket_0.30_v0.1.stl,Wide low modular support
+R02_LOW_WIDE,LOW,1,,HAP_GT_CORE_nominal_v0.1.stl,Core for modular support
+R03_MID_CORE,MID,1,HAP_LEGO_RISER_2x2_H3_v0.1.stl,HAP_SKY_CORE_4x4_v0.1.stl,Compact raised core support
+R03_MID_CORE,MID,1,HAP_LEGO_PLATE_6x6_v0.1.stl,HAP_GT_CORE_nominal_v0.1.stl,Top platform and core
+R04_MID_WIDE,MID,1,HAP_LEGO_RISER_4x4_H3_v0.1.stl,HAP_FULL_HEX_6x6_socket_0.30_v0.1.stl,Wide raised modular support
+R04_MID_WIDE,MID,1,HAP_LEGO_PLATE_8x8_v0.1.stl,HAP_GT_CORE_nominal_v0.1.stl,Wide load spread and core
+R05_TALL,TALL,1,HAP_LEGO_TOWER_2x2_H10_v0.1.stl,HAP_SKY_CORE_4x4_v0.1.stl,Tall single support
+R05_TALL,TALL,1,HAP_LEGO_PLATE_6x6_v0.1.stl,HAP_GT_CORE_nominal_v0.1.stl,Tall top platform and core
+R06_BRIDGE_32,BRIDGE,2,HAP_LEGO_BRIDGE_SUPPORT_4x8_H3_v0.1.stl,HAP_BRIDGE_DUAL_CORE_8x4_S32_v0.1.stl,Two-pier 32 mm bridge carrier
+R06_BRIDGE_32,BRIDGE,2,,HAP_GT_CORE_nominal_v0.1.stl,Two bridge cores
+R07_BRIDGE_40,BRIDGE,2,HAP_LEGO_BRIDGE_SUPPORT_4x8_H3_v0.1.stl,HAP_BRIDGE_DUAL_CORE_10x4_S40_v0.1.stl,Two-pier 40 mm bridge carrier
+R07_BRIDGE_40,BRIDGE,2,,HAP_GT_CORE_nominal_v0.1.stl,Two bridge cores
+R08_STABLE_SINGLE,STABILITY,1,HAP_LEGO_FOUNDATION_8x8_H1_v0.1.stl,HAP_CROSS_OUTRIGGER_CORE_S40_v0.1.stl,Maximum-footprint single support
+R08_STABLE_SINGLE,STABILITY,1,,HAP_GT_CORE_nominal_v0.1.stl,Core for stable single support
