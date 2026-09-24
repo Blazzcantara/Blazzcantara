@@ -36,6 +36,7 @@ $NativeBuilder = Join-Path $Root "BUILD_NATIVE_CONNECTOR_PILOT.ps1"
 $InterfaceSsot = Join-Path $Root "INTERFACE_SSOT_v0.1.md"
 $FinalAudit = Join-Path $Root "FINAL_RELEASE_AUDIT.ps1"
 $RegistryPath = Join-Path $Root "donors\DONOR_REGISTRY_v0.1.csv"
+$AuditTool = Join-Path $Root "tools\STL_COMPONENT_AUDIT.py"
 
 foreach ($required in @(
   $ArchivePath,
@@ -48,7 +49,8 @@ foreach ($required in @(
   $NativeBuilder,
   $InterfaceSsot,
   $FinalAudit,
-  $RegistryPath
+  $RegistryPath,
+  $AuditTool
 )) {
   if (-not (Test-Path $required)) { throw "Required file not found: $required" }
 }
@@ -123,6 +125,20 @@ foreach ($candidate in $candidates) {
   } catch {}
 }
 if (-not $OpenSCAD) { throw "OpenSCAD not found." }
+
+$Python = $null
+$PythonPrefix = @()
+foreach ($candidate in @("python","python3","py")) {
+  $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+  if ($cmd) {
+    $Python = $cmd.Source
+    if ($candidate -eq "py") { $PythonPrefix = @("-3") }
+    break
+  }
+}
+if (-not $Python) {
+  throw "Python 3 not found; required for final STL geometry audit."
+}
 
 $Release = Join-Path $OutputDir "HAP_FINAL_v1.0.0"
 $NativeTemp = Join-Path $OutputDir "_native_final"
@@ -365,12 +381,42 @@ Validation scope:
 - Native connector parts require interface selection plus the first system pilot.
 - Show modules require their rolling physical PASS.
 - Fallback donor mounts are included as digitally audited utility parts and are NOT claimed as donor-specific physical PASS.
+- Every one of the 38 final STL files must pass the final watertight / one-positive-solid / no-degenerate geometry audit.
 "@
 Set-Content -Encoding UTF8 -Path (Join-Path $Release "00_RELEASE\README_FINAL.md") -Value $releaseReadme
 
 $stls = @(Get-ChildItem $Release -Recurse -Filter "*.stl" -File | Sort-Object FullName)
 if ($stls.Count -ne 38) {
   throw "Expected 38 final STL files before audit, found $($stls.Count)."
+}
+
+$finalGeometryDir = Join-Path $Release "06_EVIDENCE\FINAL_GEOMETRY"
+New-Item -ItemType Directory -Force -Path $finalGeometryDir | Out-Null
+
+foreach ($file in $stls) {
+  $relative = $file.FullName.Substring($ReleaseResolved.Length).TrimStart([char[]]"\/")
+  $safeName = ($relative -replace '[\\/:*?"<>|]','_')
+  $jsonOut = Join-Path $finalGeometryDir ($safeName + ".json")
+
+  $geometryArgs = @()
+  $geometryArgs += $PythonPrefix
+  $geometryArgs += @(
+    $AuditTool,
+    $file.FullName,
+    "--json-out", $jsonOut,
+    "--expect-positive-shells", "1",
+    "--require-watertight",
+    "--require-no-degenerate"
+  )
+  & $Python @geometryArgs
+  if ($LASTEXITCODE -ne 0) {
+    throw "Final STL geometry audit failed: $relative"
+  }
+}
+
+$geometryReceipts = @(Get-ChildItem $finalGeometryDir -Filter "*.json" -File)
+if ($geometryReceipts.Count -ne 38) {
+  throw "Expected 38 final geometry receipts, found $($geometryReceipts.Count)."
 }
 
 $manifest = foreach ($file in $stls) {
