@@ -73,7 +73,7 @@ The generated starter ZIP contains 15 parts:
 - Riser 2x2 H2
 - Riser 2x2 H3
 - Riser 2x4 H3
-- Tower 2x2 H10
+- Tower 4x4 H5
 - Foundation 6x6 H1
 - Foundation 7x7 H1
 - Bridge Support 4x8 H3
@@ -162,3 +162,11 @@ Every generated STL must pass:
 
 That proves digital mesh integrity, not real clutch force. The current direct
 print path intentionally uses nominal fit values.
+
+
+## Tall-tower caution
+
+The 2x2 H10 and 2x4 H10 towers remain available in the full pack, but they are
+not first-proof parts. Their tall/slender geometry makes bed adhesion more
+critical. Use a brim when needed and prove the nominal LEGO fit on shorter parts
+before committing to those long prints.
