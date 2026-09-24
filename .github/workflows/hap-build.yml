@@ -310,6 +310,12 @@ jobs:
           python3 -m py_compile HAP/tools/STL_COMPONENT_AUDIT.py
           echo "Python tool syntax PASS"
 
+      - name: Audit source consistency
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 HAP/tools/AUDIT_SOURCE_CONSISTENCY.py
+
       - name: Validate PowerShell syntax
         shell: pwsh
         run: |
