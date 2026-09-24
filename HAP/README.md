@@ -1,4 +1,4 @@
-# Hybrid Adapter Pack v0.1 — HAP-002..040
+# Hybrid Adapter Pack v0.2 — HAP-002..043
 
 ## Status
 
@@ -241,6 +241,31 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - guided menu supports refresh, physical result recording, campaign promotion, checkpointing and dashboard opening
 - no command typing is required for the normal Windows physical-test loop
 
+
+
+### HAP-041 — LEGO Structural System Baseline
+- adds the missing printable LEGO-compatible underbuild for HAP / GraviTrax
+- fixed 8.00 mm grid shared with the existing HAP interface contract
+- nominal 3.20 mm plate height / 9.60 mm brick height
+- nominal 4.80 mm top studs / 1.80 mm stud height
+- separate clutch and stud fit-tuning hooks without changing the grid pitch
+- standalone parametric master: cad/LEGO_STRUCTURAL_MASTER_v0.1.scad
+
+### HAP-042 — 25-Part Structural Pack
+- 5 bricks
+- 6 plates
+- 5 multi-brick risers
+- 3 tall towers
+- 6 HAP-oriented support / foundation parts
+- every generated STL is audited for one positive solid shell, watertightness and zero degenerate triangles
+- full 25-part ZIP plus curated 12-part starter ZIP
+
+### HAP-043 — Structural Pack CI / Artifact
+- PowerShell syntax gate includes the structural builder
+- CI builds all 25 nominal structural STLs
+- verifies the full 25-part pack and 12-part starter pack
+- publishes HAP-lego-structural-pack-v0.1 as its own workflow artifact
+
 ## Current automated build
 
 Expected core output: **47 STL files** plus synthetic donor/native-connector smoke outputs.
@@ -355,6 +380,10 @@ Fit-critical interfaces remain provisional:
 - Physical Markdown/HTML/JSON dashboard: IMPLEMENTED
 - Physical evidence checkpoint/restore: IMPLEMENTED
 - Self-contained Windows physical workbench: IMPLEMENTED
+- LEGO structural master: IMPLEMENTED
+- 25-part printable LEGO-compatible underbuild: IMPLEMENTED
+- 12-part structural starter pack: IMPLEMENTED
+- Structural-pack geometry audit + CI artifact: IMPLEMENTED
 - Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
 - Snake donor: HOLD_LICENSE
 - Actual printed donor derivatives: NOT YET PHYSICALLY VALIDATED

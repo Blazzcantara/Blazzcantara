@@ -45,6 +45,7 @@ jobs:
             "HAP/REFRESH_PHYSICAL_WORKBENCH.ps1",
             "HAP/BUILD_PHYSICAL_WORKBENCH.ps1",
             "HAP/BUILD_DIGITAL_STL_SET.ps1",
+            "HAP/BUILD_LEGO_STRUCTURAL_PACK.ps1",
             "HAP/PHYSICAL_WORKBENCH_MENU.ps1"
           )
 
@@ -274,6 +275,25 @@ jobs:
           if ($count -ne 47) {
             throw "Digital STL set expected 47 STLs, found $count."
           }
+
+      - name: Build and audit LEGO structural pack
+        shell: pwsh
+        run: |
+          ./HAP/BUILD_LEGO_STRUCTURAL_PACK.ps1 -OutputDir "./HAP/lego_structural_out"
+
+          $full = "./HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1.zip"
+          $starter = "./HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1.zip"
+
+          if (-not (Test-Path $full)) { throw "Full LEGO structural ZIP missing." }
+          if (-not (Test-Path $starter)) { throw "Starter LEGO structural ZIP missing." }
+
+          $fullCount = (Get-ChildItem "./HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1" -Recurse -Filter "*.stl" -File).Count
+          $starterCount = (Get-ChildItem "./HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1" -Recurse -Filter "*.stl" -File).Count
+
+          if ($fullCount -ne 25) { throw "Expected 25 full structural STLs, found $fullCount." }
+          if ($starterCount -ne 12) { throw "Expected 12 starter STLs, found $starterCount." }
+
+          Write-Host "LEGO Structural Pack PASS: 25 full / 12 starter" -ForegroundColor Green
 
       - name: Validate donor registry and recipes
         shell: bash
@@ -669,3 +689,13 @@ jobs:
           path: |
             HAP/digital_release/HAP_DIGITAL_STL_SET_v0.1.zip
             HAP/digital_release/HAP_DIGITAL_STL_SET_v0.1.zip.sha256
+
+      - name: Upload LEGO structural pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAP-lego-structural-pack-v0.1
+          path: |
+            HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1.zip
+            HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_PACK_v0.1.zip.sha256
+            HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1.zip
+            HAP/lego_structural_out/HAP_LEGO_STRUCTURAL_STARTER_v0.1.zip.sha256
