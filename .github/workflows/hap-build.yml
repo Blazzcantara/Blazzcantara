@@ -238,7 +238,9 @@ jobs:
             "HAP/VALIDATE_STRUCTURAL_RESULTS.ps1",
             "HAP/VALIDATE_SHOW_PROMOTION.ps1",
             "HAP/FINAL_RELEASE_AUDIT.ps1",
-            "HAP/BUILD_FINAL_RELEASE.ps1"
+            "HAP/BUILD_FINAL_RELEASE.ps1",
+            "HAP/BUILD_LEGO_GRAVITRAX_STARTER_PACK.ps1",
+            "HAP/VERIFY_LEGO_GRAVITRAX_STARTER_PACK.ps1"
           )
 
           foreach ($file in $files) {
@@ -356,6 +358,37 @@ jobs:
           else
             echo "Synthetic final-release refusal PASS"
           fi
+
+      - name: Verify LEGO-GraviTrax starter pack CAD
+        shell: pwsh
+        run: |
+          ./HAP/VERIFY_LEGO_GRAVITRAX_STARTER_PACK.ps1
+
+      - name: Build LEGO-GraviTrax starter pack
+        shell: pwsh
+        run: |
+          ./HAP/BUILD_LEGO_GRAVITRAX_STARTER_PACK.ps1 -OutputDir "./HAP/starter_pack_ci"
+
+          $pack = "./HAP/starter_pack_ci/HAP_LEGO_GRAVITRAX_STARTER_PACK_PROVISIONAL"
+          $stls = @(Get-ChildItem $pack -Filter "*.stl")
+          if ($stls.Count -ne 8) {
+            throw "Expected exactly 8 starter-pack STL files, got $($stls.Count)"
+          }
+          if (-not (Test-Path "$pack/MANIFEST.json")) { throw "Starter manifest missing." }
+          if (-not (Test-Path "$pack/README.md")) { throw "Starter README missing." }
+
+          Compress-Archive -Path "$pack/*" -DestinationPath "./HAP_LEGO_GRAVITRAX_STARTER_PACK_PROVISIONAL.zip" -Force
+          if (-not (Test-Path "./HAP_LEGO_GRAVITRAX_STARTER_PACK_PROVISIONAL.zip")) {
+            throw "Starter ZIP missing."
+          }
+          Write-Host "Starter pack artifact PASS: 8 STL + manifest + README" -ForegroundColor Green
+
+      - name: Upload LEGO-GraviTrax starter pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAP-LEGO-GraviTrax-Starter-Pack-Provisional
+          path: HAP_LEGO_GRAVITRAX_STARTER_PACK_PROVISIONAL.zip
+          if-no-files-found: error
 
       - name: Package
         shell: bash
