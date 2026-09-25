@@ -683,6 +683,71 @@ module donor_underbody_rect(
 }
 
 // -------------------------
+// HAP LEGO <-> GraviTrax Starter Pack
+// Digital production candidates; GENERATED != PHYSICALLY VALIDATED.
+// -------------------------
+lego_stud_d = 4.80;
+lego_stud_h = 1.80;
+
+module lego_stud_top(nx=2, ny=2, z=0) {
+    for (ix=[0:nx-1])
+    for (iy=[0:ny-1]) {
+        x = (ix-(nx-1)/2)*lego_pitch;
+        y = (iy-(ny-1)/2)*lego_pitch;
+        translate([x,y,z])
+            cylinder(d=lego_stud_d,h=lego_stud_h);
+    }
+}
+
+module gt_to_lego_adapter(nx=2, ny=2, reinforced=false, dx=0, dy=0) {
+    w = nx*lego_pitch - lego_gap;
+    d = ny*lego_pitch - lego_gap;
+    base_h = reinforced ? 4.00 : 3.20;
+    transition_h = reinforced ? 5.00 : 3.20;
+    inner_flat = GT_MALE_FLAT - 2*gt_ring_wall;
+
+    union() {
+        // GT-family receiving/base geometry.
+        difference() {
+            hex_prism(gt_support_outer_flat,base_h,0);
+            translate([0,0,-eps])
+                hex_prism(inner_flat,base_h+2*eps,0);
+        }
+
+        // Transition to a LEGO-compatible studded top.
+        hull() {
+            translate([0,0,base_h-eps])
+                linear_extrude(height=0.22) hex2d(gt_support_outer_flat);
+            translate([dx-w/2,dy-d/2,base_h+transition_h])
+                cube([w,d,0.22],center=false);
+        }
+
+        translate([dx-w/2,dy-d/2,base_h+transition_h])
+            cube([w,d,lego_plate_h],center=false);
+
+        lego_stud_top(nx,ny,base_h+transition_h+lego_plate_h);
+
+        if (reinforced) {
+            for (a=[0:90:270])
+                rotate([0,0,a])
+                    translate([0,-1.2,base_h])
+                        cube([gt_support_outer_flat/2,2.4,transition_h],center=false);
+        }
+    }
+}
+
+module lego_to_gt_reinforced(nx=4,ny=4) {
+    union() {
+        lego_to_gt_adapter(nx,ny,LEGO_SCALE,GT_MALE_FLAT,10.0);
+        // Four compact gussets strengthen the transition without changing interfaces.
+        for (a=[45:90:315])
+            rotate([0,0,a])
+                translate([8,-1.5,lego_plate_h])
+                    cube([8,3,5],center=false);
+    }
+}
+
+// -------------------------
 // Output selector
 // -------------------------
 if (PART == "LEGO_CLUTCH_2x2")
@@ -702,6 +767,24 @@ else if (PART == "LG2x2_GT")
 
 else if (PART == "LG4x4_GT")
     lego_to_gt_adapter(4,4,LEGO_SCALE,GT_MALE_FLAT,8.0);
+
+else if (PART == "GT_LG2x2")
+    gt_to_lego_adapter(2,2,false,0,0);
+
+else if (PART == "GT_LG4x4")
+    gt_to_lego_adapter(4,4,false,0,0);
+
+else if (PART == "LG4x4_GT_REINFORCED")
+    lego_to_gt_reinforced(4,4);
+
+else if (PART == "GT_LG4x4_REINFORCED")
+    gt_to_lego_adapter(4,4,true,0,0);
+
+else if (PART == "LG4x4_GT_STARTER_OFFSET")
+    lego_to_gt_offset_direct(4,4,4.0,0.0,LEGO_SCALE,GT_MALE_FLAT,10.0);
+
+else if (PART == "GT_LG4x4_STARTER_OFFSET")
+    gt_to_lego_adapter(4,4,false,4.0,0.0);
 
 else if (PART == "FULL_HEX_6x6")
     lego_full_hex_platform(6,6,LEGO_SCALE,0,0,TILE_ROTATION,CORE_CLEARANCE);
