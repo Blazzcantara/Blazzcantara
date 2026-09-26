@@ -5,9 +5,17 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Cad = Join-Path $Root "cad\\HAP_MASTER_v0.1.scad"
 $Out = Join-Path $OutputDir "HAP_LEGO_GRAVITRAX_STARTER_PACK_PROVISIONAL"
+if (Test-Path $Out) { Remove-Item $Out -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 
-$candidates=@("openscad.com","openscad.exe","C:\\Program Files\\OpenSCAD\\openscad.com","C:\\Program Files\\OpenSCAD\\openscad.exe")
+$candidates=@(
+  "openscad",
+  "/usr/bin/openscad",
+  "openscad.com",
+  "openscad.exe",
+  "C:\\Program Files\\OpenSCAD\\openscad.com",
+  "C:\\Program Files\\OpenSCAD\\openscad.exe"
+)
 $OpenSCAD=$null
 foreach($candidate in $candidates){
   try {
@@ -16,7 +24,7 @@ foreach($candidate in $candidates){
     if($cmd){$OpenSCAD=$cmd.Source;break}
   } catch {}
 }
-if(-not $OpenSCAD){throw "OpenSCAD not found."}
+if(-not $OpenSCAD){throw "OpenSCAD not found on PATH or in known Windows/Linux locations."}
 
 $parts=[ordered]@{
  "HAP_LG2x2_to_GT_PROVISIONAL"="LG2x2_GT"
