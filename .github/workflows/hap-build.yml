@@ -382,12 +382,22 @@ jobs:
           }
           if (-not (Test-Path "$pack/MANIFEST.json")) { throw "Starter manifest missing." }
           if (-not (Test-Path "$pack/README.md")) { throw "Starter README missing." }
+          if (-not (Test-Path "$pack/MESH_AUDIT_SUMMARY.json")) { throw "Starter mesh audit summary missing." }
+          if (-not (Test-Path "$pack/HAP_MASTER_v0.1.scad")) { throw "Starter CAD source missing." }
+
+          $manifest = Get-Content -Raw "$pack/MANIFEST.json" | ConvertFrom-Json
+          if ($manifest.reality_state -ne "DIGITALLY_VALIDATED_PROVISIONAL_FINAL") {
+            throw "Unexpected starter reality state: $($manifest.reality_state)"
+          }
+          if ($manifest.mesh_audit -ne "PASS_8_OF_8_WATERTIGHT_SINGLE_SOLID") {
+            throw "Starter mesh audit state not sealed."
+          }
 
           Compress-Archive -Path "$pack/*" -DestinationPath "./HAP_LEGO_GRAVITRAX_STARTER_PACK_PROVISIONAL.zip" -Force
           if (-not (Test-Path "./HAP_LEGO_GRAVITRAX_STARTER_PACK_PROVISIONAL.zip")) {
             throw "Starter ZIP missing."
           }
-          Write-Host "Starter pack artifact PASS: 8 STL + manifest + README" -ForegroundColor Green
+          Write-Host "Starter pack artifact PASS: 8 watertight single-solid STL + manifest + audit + CAD + README" -ForegroundColor Green
 
       - name: Upload LEGO-GraviTrax starter pack
         uses: actions/upload-artifact@v4
