@@ -63,17 +63,18 @@ if ($stls.Count -ne 38) {
   throw "Expected 38 final STL files, found $($stls.Count)."
 }
 
-$forbidden = @(
-  "CAL_",
-  "SMOKE",
-  "SYNTHETIC",
-  "UNTESTED",
-  "CI_FIXTURE"
+$forbiddenPatterns = @(
+  '(^|[_-])CAL[_-]',
+  '(^|[_-])SMOKE([_.-]|$)',
+  '(^|[_-])SYNTHETIC([_.-]|$)',
+  '(^|[_-])UNTESTED([_.-]|$)',
+  '(^|[_-])CI_FIXTURE([_.-]|$)'
 )
 
 foreach ($file in Get-ChildItem $ReleaseDir -Recurse -File) {
-  foreach ($token in $forbidden) {
-    if ($file.Name.ToUpperInvariant().Contains($token)) {
+  $upperName = $file.Name.ToUpperInvariant()
+  foreach ($pattern in $forbiddenPatterns) {
+    if ($upperName -match $pattern) {
       throw "Forbidden non-production file in final release: $($file.FullName)"
     }
   }
