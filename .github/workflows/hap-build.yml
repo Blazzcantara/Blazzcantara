@@ -240,7 +240,8 @@ jobs:
             "HAP/FINAL_RELEASE_AUDIT.ps1",
             "HAP/BUILD_FINAL_RELEASE.ps1",
             "HAP/BUILD_LEGO_GRAVITRAX_STARTER_PACK.ps1",
-            "HAP/VERIFY_LEGO_GRAVITRAX_STARTER_PACK.ps1"
+            "HAP/VERIFY_LEGO_GRAVITRAX_STARTER_PACK.ps1",
+            "HAP/VERIFY_LEGO_GRAVITRAX_INTERFACE_INVARIANTS.ps1"
           )
 
           foreach ($file in $files) {
@@ -363,6 +364,11 @@ jobs:
         shell: pwsh
         run: |
           ./HAP/VERIFY_LEGO_GRAVITRAX_STARTER_PACK.ps1
+
+      - name: Verify LEGO-GraviTrax interface invariants
+        shell: pwsh
+        run: |
+          ./HAP/VERIFY_LEGO_GRAVITRAX_INTERFACE_INVARIANTS.ps1
 
       - name: Build LEGO-GraviTrax starter pack
         shell: pwsh
