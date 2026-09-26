@@ -1,0 +1,4 @@
+module_id,module_name,run_count,successful_runs,connector_fit,core_fit,lateral_rigidity,track_clearance,tested_real,result,notes
+SHOW-ST01,Straight,10,10,PASS,PASS,PASS,PASS,NO,PASS,CI fixture
+SHOW-CV01,Large Curve,10,10,PASS,PASS,PASS,PASS,NO,PASS,CI fixture
+SHOW-SC01,S-Curve,10,10,PASS,PASS,PASS,PASS,NO,PASS,CI fixture

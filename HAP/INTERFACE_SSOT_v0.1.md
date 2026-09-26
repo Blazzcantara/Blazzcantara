@@ -18,7 +18,7 @@ This file is the engineering single source of truth for the current Hybrid Adapt
 | Technic-family | hole diameter | 4.90 mm | CALIBRATION REQUIRED |
 | GT support | outer support hex, across flats | 46.00 mm | donor-derived nominal |
 | GT support | male hex, across flats | 29.78 mm | CALIBRATION REQUIRED |
-| GT support | male height | 2.00 mm | nominal |
+| GT support | male height | 2.00 mm | nominal |\n| GT support | female socket clearance across flats | +0.30 mm vs selected GT male | PROVISIONAL / PHYSICAL VALIDATION REQUIRED |\n| GT support | female socket nominal across flats | 30.08 mm at 29.78 mm male | derived provisional |
 | GT full tile | full hex, across flats | 59.60 mm | donor-derived nominal |
 | GT full tile | point-to-point derived | about 68.82 mm | derived |
 | HAP core | core body, across flats | 30.80 mm | prototype |
@@ -30,7 +30,7 @@ This file is the engineering single source of truth for the current Hybrid Adapt
 
 Gate A — LEGO clutch: keep the 8.00 mm pitch fixed and select the best contact delta from -0.08 / -0.04 / 0.00 / +0.04 / +0.08 mm. Positive is tighter; negative is looser.
 
-Gate B — GT male support: select the best width from 29.60 / 29.70 / 29.78 / 29.86 / 29.96 mm.
+Gate B — GT male support: select the best width from 29.60 / 29.70 / 29.78 / 29.86 / 29.96 mm.\n\nReverse-interface note — the LEGO-facing starter adapters use a GT female receiver defined as `selected GT male flat + GT_SOCKET_CLEARANCE`. The current nominal clearance is +0.30 mm across flats (30.08 mm socket at the 29.78 mm nominal male). This is digitally sanity-checked but remains physically unsealed until tested with real mating parts.
 
 Gate C — replaceable core: select the best socket clearance from 0.20 / 0.30 / 0.40 mm using the same core insert.
 

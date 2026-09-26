@@ -1,4 +1,4 @@
-# Hybrid Adapter Pack v0.1 — HAP-002..022
+# Hybrid Adapter Pack v0.1 — HAP-002..033
 
 ## Status
 
@@ -147,6 +147,47 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - outputs a six-STL pilot package for the Straight / Curve / S-Curve system test
 - synthetic CI profiles are rejected
 
+
+
+### HAP-023 — Physical Test Operator
+- progress checker for all five interface gates
+- reports incomplete, invalid-multiple-pass and ready-to-seal states
+
+### HAP-024 — First Physical Pilot Promotion
+- fail-closed Straight / Large Curve / S-Curve validator
+- minimum 10/10 successful runs per module
+- real-test notes and fit / rigidity / clearance PASS required
+
+### HAP-025 / HAP-030 — Structural Physical Seal
+- all 11 structural production parts represented in the final physical matrix
+- vertical load / lateral rigidity / twist / crack-free gates
+- structural receipt required for final release
+
+### HAP-026..029 — Advanced Show Promotion
+- Crossing / Spiral-to-Fall / Loop / Whoopy / Solenoid S-Curve
+- minimum 10/10 successful runs each
+- requires passed first physical pilot
+- produces a show-promotion receipt
+
+### HAP-031 — Final Release Consolidation
+- clean production-only release layout
+- calibration / smoke / CI fixture files excluded
+- 38 final STL target: 11 core adapters + 11 structural + 2 native connector + 8 show modules + 6 fallback mounts
+
+### HAP-032 — Final Release Audit
+- verifies four real evidence states
+- verifies exactly 38 STL files and 38 manifest rows
+- verifies every final STL SHA-256
+- rejects calibration, smoke and synthetic filenames
+
+### HAP-033 — HAP FINAL v1.0.0 Builder
+- only accepts real physical profile + pilot + structural + show receipts
+- verifies receipt linkage by SHA-256
+- rebuilds selected HAP geometry from sealed values
+- extracts only eight physically promoted CC-Attribution donor tiles from the local archive
+- runs final audit and creates RELEASE_SEAL.txt
+- only then creates HAP_FINAL_v1.0.0.zip and its SHA-256 sidecar
+
 ## Current automated build
 
 Expected core output: **47 STL files** plus synthetic donor/native-connector smoke outputs.
@@ -157,7 +198,7 @@ Windows:
 
 CI packages the complete result as:
 
-    HAP_v0.1_PHYSICAL_CALIBRATION_GATE.zip
+    HAP_v0.1_FINALIZATION_GATES.zip
 
 ## Interface SSOT
 
@@ -200,6 +241,11 @@ Fit-critical interfaces remain provisional:
 - donors/PILOT_SHOW_MODULES_v0.1.md
 - calibration/CALIBRATION_CAMPAIGN_v0.1.md
 - calibration/PHYSICAL_RESULTS_TEMPLATE_v0.1.csv
+- pilot/PILOT_RESULTS_TEMPLATE_v0.1.csv
+- structural/STRUCTURAL_RESULTS_TEMPLATE_v0.1.csv
+- show/SHOW_RESULTS_TEMPLATE_v0.1.csv
+- FINALIZATION_GUIDE_v1.0.md
+- FINAL_RELEASE_GATE_MATRIX_v1.0.md
 
 ## Architecture
 
@@ -216,7 +262,7 @@ Fit-critical interfaces remain provisional:
 ## Reality state
 
 - Parametric CAD: IMPLEMENTED
-- 44-output core build definition: IMPLEMENTED
+- 47-output core build definition: IMPLEMENTED
 - LEGO family: GENERATED / NOT VALIDATED
 - GT interface: GENERATED / NOT VALIDATED
 - HAP core: GENERATED / NOT VALIDATED
@@ -238,6 +284,13 @@ Fit-critical interfaces remain provisional:
 - 23-part physical calibration pack builder: IMPLEMENTED
 - Five-gate physical profile sealer: IMPLEMENTED
 - Six-part sealed-value pilot builder: IMPLEMENTED
+- Physical test progress operator: IMPLEMENTED
+- First pilot promotion gate: IMPLEMENTED
+- 11-part structural seal gate: IMPLEMENTED
+- Advanced show-module promotion gate: IMPLEMENTED
+- Production-only final release consolidation: IMPLEMENTED
+- Fail-closed final audit: IMPLEMENTED
+- HAP FINAL v1.0.0 builder: IMPLEMENTED / BLOCKED UNTIL REAL PHYSICAL EVIDENCE
 - Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
 - Snake donor: HOLD_LICENSE
 - Actual printed donor derivatives: NOT YET PHYSICALLY VALIDATED
