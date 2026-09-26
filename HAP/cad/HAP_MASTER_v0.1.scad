@@ -23,6 +23,7 @@ LEGO_SCALE = is_undef(LEGO_SCALE) ? 1.000 : LEGO_SCALE; // legacy compatibility 
 LEGO_CLUTCH_DELTA = is_undef(LEGO_CLUTCH_DELTA) ? 0.00 : LEGO_CLUTCH_DELTA;
 GT_MALE_FLAT = is_undef(GT_MALE_FLAT) ? 29.78 : GT_MALE_FLAT;
 CORE_CLEARANCE = is_undef(CORE_CLEARANCE) ? 0.30 : CORE_CLEARANCE;
+GT_SOCKET_CLEARANCE = is_undef(GT_SOCKET_CLEARANCE) ? 0.30 : GT_SOCKET_CLEARANCE;
 OFFSET_X = is_undef(OFFSET_X) ? 0.0 : OFFSET_X;
 OFFSET_Y = is_undef(OFFSET_Y) ? 0.0 : OFFSET_Y;
 TILE_ROTATION = is_undef(TILE_ROTATION) ? 0.0 : TILE_ROTATION;
@@ -169,17 +170,29 @@ module lego_to_gt_adapter(nx=4, ny=4, xy_scale=1.0, male_flat=29.78, transition_
     union() {
         lego_tile_bottom(nx,ny,xy_scale);
 
-        difference() {
+        // Small footprints (notably 2x2) must stay solid: the old central
+        // relief was wider than the lower transition and split the model.
+        if (nx <= 2 || ny <= 2) {
             hull() {
-                translate([0,0,z0])
-                    centered_cube_xy(w*0.94,d*0.94,0.22,0);
+                translate([0,0,z0-eps])
+                    centered_cube_xy(w*0.94,d*0.94,0.22+eps,0);
                 translate([0,0,z1])
                     linear_extrude(height=0.22)
                         hex2d(gt_support_outer_flat);
             }
+        } else {
+            difference() {
+                hull() {
+                    translate([0,0,z0-eps])
+                        centered_cube_xy(w*0.94,d*0.94,0.22+eps,0);
+                    translate([0,0,z1])
+                        linear_extrude(height=0.22)
+                            hex2d(gt_support_outer_flat);
+                }
 
-            translate([0,0,z0+0.50])
-                hex_prism(inner_flat,transition_h+gt_platform_h+gt_ring_h+2.0,0);
+                translate([0,0,z0+0.50])
+                    hex_prism(inner_flat,transition_h+gt_platform_h+gt_ring_h+2.0,0);
+            }
         }
 
         gt_support_top(male_flat,z1);
@@ -704,14 +717,17 @@ module gt_to_lego_adapter(nx=2, ny=2, reinforced=false, dx=0, dy=0) {
     d = ny*lego_pitch - lego_gap;
     base_h = reinforced ? 4.00 : 3.20;
     transition_h = reinforced ? 5.00 : 3.20;
-    inner_flat = GT_MALE_FLAT - 2*gt_ring_wall;
+    // Female receiver is dimensioned from the OUTER male envelope plus
+    // explicit clearance. The previous subtraction of 2*ring_wall produced
+    // a 25.78 mm opening for a 29.78 mm male and was not a valid inverse.
+    socket_flat = GT_MALE_FLAT + GT_SOCKET_CLEARANCE;
 
     union() {
-        // GT-family receiving/base geometry.
+        // GT-family female receiver/base geometry.
         difference() {
             hex_prism(gt_support_outer_flat,base_h,0);
             translate([0,0,-eps])
-                hex_prism(inner_flat,base_h+2*eps,0);
+                hex_prism(socket_flat,base_h+2*eps,0);
         }
 
         // Transition to a LEGO-compatible studded top.
