@@ -97,6 +97,24 @@ foreach ($row in $manifest) {
   }
 }
 
+# Every production STL must be represented exactly once in the manifest.
+$manifestPaths = @($manifest | ForEach-Object {
+  ($_.relative_path -replace '\\','/').TrimStart('/').ToLowerInvariant()
+})
+$duplicateManifestPaths = @($manifestPaths | Group-Object | Where-Object { $_.Count -ne 1 })
+if ($duplicateManifestPaths.Count -gt 0) {
+  throw "FINAL_MANIFEST.csv contains duplicate STL paths: $($duplicateManifestPaths.Name -join ', ')"
+}
+
+$stlPaths = @($stls | ForEach-Object {
+  ($_.FullName.Substring($ReleaseDir.Length).TrimStart([char[]]"\/") -replace '\\','/').ToLowerInvariant()
+} | Sort-Object)
+$manifestPathSet = @($manifestPaths | Sort-Object)
+
+if (Compare-Object -ReferenceObject $stlPaths -DifferenceObject $manifestPathSet) {
+  throw "FINAL_MANIFEST.csv does not cover the exact final STL set."
+}
+
 $shaPath = Join-Path $ReleaseDir "00_RELEASE\SHA256SUMS.txt"
 if (-not (Test-Path $shaPath)) { throw "SHA256SUMS.txt missing." }
 
