@@ -1,4 +1,4 @@
-# Hybrid Adapter Pack v0.2 — HAP-002..043
+# Hybrid Adapter Pack v0.2 — HAP-002..046
 
 ## Status
 
@@ -251,20 +251,50 @@ The pack now covers LEGO clutch supports, modular GraviTrax cores, offsets, Sky/
 - separate clutch and stud fit-tuning hooks without changing the grid pitch
 - standalone parametric master: cad/LEGO_STRUCTURAL_MASTER_v0.1.scad
 
-### HAP-042 — 25-Part Structural Pack
+### HAP-042 — Structural Pack Baseline
 - 5 bricks
-- 6 plates
+- 8 plates
 - 5 multi-brick risers
 - 3 tall towers
-- 6 HAP-oriented support / foundation parts
+- 8 HAP-oriented support / foundation parts
 - every generated STL is audited for one positive solid shell, watertightness and zero degenerate triangles
-- full 25-part ZIP plus curated 12-part starter ZIP
+- full 29-part ZIP plus curated 15-part starter ZIP
 
 ### HAP-043 — Structural Pack CI / Artifact
 - PowerShell syntax gate includes the structural builder
-- CI builds all 25 nominal structural STLs
-- verifies the full 25-part pack and 12-part starter pack
+- CI builds all 29 nominal structural STLs
+- verifies the full 29-part pack and 15-part starter pack
 - publishes HAP-lego-structural-pack-v0.1 as its own workflow artifact
+
+
+### HAP-044 — Full Pre-Print System Audit
+- audits the exact nominal no-Technic direct-print selection instead of the broader development/calibration set
+- validates HAP ↔ LEGO structural SSOT parity, mesh integrity, unique hashes, catalog dimensions and print orientation
+- rejects zero-volume shells, non-watertight geometry, degenerate triangles and calibration/Technic leakage
+- surfaces physical limitations instead of converting digital PASS into a physical-fit claim
+- hardens the physical-profile sealer, physical-pilot evidence chain and native connector mesh gates
+
+### HAP-045 — Audited Distribution Gate
+- creates a dedicated pre-print audit package with JSON, CSV and SHA-256 evidence
+- verifies the exact ZIP by clean re-extraction and checksum replay
+- keeps the real donor-derived native connector pair as a separately sourced addendum
+- adds negative regression tests for duplicated calibration candidates and tampered profile sidecars
+
+### HAP-046 — S32 / S40 Grid-Parity Closure
+- deep audit found that 40 mm dual-foot supports require an odd centered 7-stud grid
+- adds 7x2 plate for the S40 dual-foot family
+- adds 7x7 plate + 7x7 foundation for the S40 cross-outrigger
+- adds exact 10x4 bridge support for HAP_BRIDGE_DUAL_CORE_10x4_S40
+- structural pack is now 29 parts; curated starter pack is 15 parts
+- public/regenerable no-Technic pre-print set is now 55 STL before the separate two-part native addendum
+
+### HAP-047 — Print Master Reconciliation
+- complete print-kit builder updated from the old 51/53 scope to 55/57 STL
+- private nominal native addendum is accepted only when both 1.000 STL SHA-256 values match the audited identities
+- print orientation/risk metadata is generated for donor and tall-tower parts
+- high-slender H10 tower is removed from the starter pack; stable 4x4 H5 is used instead
+- FIRST_PROOF recipe provides a low-cost real assembly before large-volume printing
+- CI builds and publishes the corrected 55-STL public print master
 
 ## Current automated build
 
@@ -298,7 +328,7 @@ Fit-critical interfaces remain provisional:
 6. Select the best native removable-connector scale.
 7. Record exactly one real PASS per gate in the physical-results CSV.
 8. Seal the physical interface profile.
-9. Build the six-part sealed-value physical pilot package.
+9. Build the six-part selected-value physical pilot package.
 10. Pilot the native bridge on Straight, Large Curve and S-Curve.
 11. Perform static rigidity checks on Sky / Bridge / Outrigger supports.
 12. Only after the pilot passes promote Crossing, Spiral, Loop and Whoopy.
@@ -364,7 +394,7 @@ Fit-critical interfaces remain provisional:
 - Fixed-pitch LEGO clutch calibration: IMPLEMENTED
 - 23-part physical calibration pack builder: IMPLEMENTED
 - Five-gate physical profile sealer: IMPLEMENTED
-- Six-part sealed-value pilot builder: IMPLEMENTED
+- Six-part selected-value pilot builder: IMPLEMENTED
 - Physical test progress operator: IMPLEMENTED
 - First pilot promotion gate: IMPLEMENTED
 - 11-part structural seal gate: IMPLEMENTED
@@ -381,9 +411,13 @@ Fit-critical interfaces remain provisional:
 - Physical evidence checkpoint/restore: IMPLEMENTED
 - Self-contained Windows physical workbench: IMPLEMENTED
 - LEGO structural master: IMPLEMENTED
-- 25-part printable LEGO-compatible underbuild: IMPLEMENTED
-- 12-part structural starter pack: IMPLEMENTED
+- 29-part printable LEGO-compatible underbuild: IMPLEMENTED
+- 15-part structural starter pack: IMPLEMENTED
 - Structural-pack geometry audit + CI artifact: IMPLEMENTED
+- Full pre-print 55-STL audit: IMPLEMENTED
+- Corrected complete 55-STL public print master: IMPLEMENTED
+- Private 57-STL master path with hash-locked native pair: IMPLEMENTED
+- S32/S40 odd/even grid-parity closure: IMPLEMENTED
 - Eight CC-Attribution donor candidates: CONVERSION-READY / NOT PHYSICALLY VALIDATED
 - Snake donor: HOLD_LICENSE
 - Actual printed donor derivatives: NOT YET PHYSICALLY VALIDATED

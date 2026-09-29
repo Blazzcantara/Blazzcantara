@@ -25,6 +25,7 @@ if (-not (Test-Path $AuditTool)) { throw "Audit tool not found: $AuditTool" }
 $candidates = @(
   "openscad.com",
   "openscad.exe",
+  "openscad",
   "C:\Program Files\OpenSCAD\openscad.com",
   "C:\Program Files\OpenSCAD\openscad.exe"
 )
@@ -118,7 +119,9 @@ try {
         $dst,
         "--json-out", $auditJson,
         "--expect-components", "1",
-        "--require-watertight"
+        "--expect-positive-shells", "1",
+        "--require-watertight",
+        "--require-no-degenerate"
       )
       & $Python @auditArgs
 

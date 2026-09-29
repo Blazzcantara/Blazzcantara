@@ -1,0 +1,166 @@
+name: HAP All-in-One Master
+
+on:
+  push:
+    branches:
+      - hap-v0.2-preprint-full-audit
+    paths:
+      - .github/workflows/hap-all-in-one.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download authoritative prior artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p prior
+          gh run download 36001817991 -R "$GITHUB_REPOSITORY" -n HAP-complete-audited-no-technic-v0.2 -D prior/complete
+          gh run download 36001817991 -R "$GITHUB_REPOSITORY" -n HAP-lego-structural-pack-v0.1 -D prior/lego
+          gh run download 36001817991 -R "$GITHUB_REPOSITORY" -n HAP-digital-stl-set-v0.1 -D prior/digital
+          gh run download 36001817991 -R "$GITHUB_REPOSITORY" -n HAP-preprint-full-audit-v0.2 -D prior/preprint
+          gh run download 36001817991 -R "$GITHUB_REPOSITORY" -n HAP-v0.1-physical-workbench -D prior/workbench
+          find prior -maxdepth 2 -type f -print | sort
+
+      - name: Assemble All-in-One tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          MASTER="HAP_ALL_IN_ONE_MASTER_v0.2"
+          rm -rf "$MASTER"
+          mkdir -p "$MASTER"
+
+          mkdir -p "$MASTER/01_READY_TO_PRINT_PUBLIC_55"
+          unzip -q prior/complete/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2.zip -d "$MASTER/01_READY_TO_PRINT_PUBLIC_55"
+
+          mkdir -p "$MASTER/02_LEGO_STRUCTURAL_FULL_29"
+          unzip -q prior/lego/HAP_LEGO_STRUCTURAL_PACK_v0.1.zip -d "$MASTER/02_LEGO_STRUCTURAL_FULL_29"
+
+          mkdir -p "$MASTER/03_LEGO_STRUCTURAL_STARTER_15"
+          unzip -q prior/lego/HAP_LEGO_STRUCTURAL_STARTER_v0.1.zip -d "$MASTER/03_LEGO_STRUCTURAL_STARTER_15"
+
+          mkdir -p "$MASTER/04_TECHNIC_SEPARATE" _digital_extract
+          unzip -q prior/digital/HAP_DIGITAL_STL_SET_v0.1.zip -d _digital_extract
+          find _digital_extract -type f -name "CAL_TECHNIC_HOLE_*.stl" -exec cp {} "$MASTER/04_TECHNIC_SEPARATE/" \;
+          find _digital_extract -type f -name "HAP_TECHNIC_SIDE_CORE_*H_v0.1.stl" -exec cp {} "$MASTER/04_TECHNIC_SEPARATE/" \;
+          cp HAP/TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md "$MASTER/04_TECHNIC_SEPARATE/"
+
+          mkdir -p "$MASTER/05_DIGITAL_DEVELOPMENT_47"
+          cp -a _digital_extract/. "$MASTER/05_DIGITAL_DEVELOPMENT_47/"
+
+          mkdir -p "$MASTER/06_PREPRINT_AUDIT_EVIDENCE"
+          cp prior/preprint/PREPRINT_AUDIT.json "$MASTER/06_PREPRINT_AUDIT_EVIDENCE/"
+          cp prior/preprint/PREPRINT_MANIFEST.csv "$MASTER/06_PREPRINT_AUDIT_EVIDENCE/"
+          cp prior/preprint/00_PREPRINT_AUDIT_README.md "$MASTER/06_PREPRINT_AUDIT_EVIDENCE/"
+          cp prior/preprint/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip* "$MASTER/06_PREPRINT_AUDIT_EVIDENCE/"
+
+          mkdir -p "$MASTER/07_SOURCE_CAD_TOOLS_DOCS/HAP"
+          for d in cad tools calibration pilot structural show donors ci lego_structural print_kits; do
+            if [ -d "HAP/$d" ]; then cp -a "HAP/$d" "$MASTER/07_SOURCE_CAD_TOOLS_DOCS/HAP/"; fi
+          done
+          find HAP -maxdepth 1 -type f \( -name "*.ps1" -o -name "*.md" -o -name "*.csv" -o -name "*.cmd" -o -name "*.txt" -o -name "LICENSE*" \) -exec cp {} "$MASTER/07_SOURCE_CAD_TOOLS_DOCS/HAP/" \;
+          mkdir -p "$MASTER/07_SOURCE_CAD_TOOLS_DOCS/.github/workflows"
+          cp .github/workflows/hap-build.yml "$MASTER/07_SOURCE_CAD_TOOLS_DOCS/.github/workflows/"
+          cp .github/workflows/hap-all-in-one.yml "$MASTER/07_SOURCE_CAD_TOOLS_DOCS/.github/workflows/"
+
+          mkdir -p "$MASTER/08_NATIVE_PRIVATE_ADDENDUM"
+          cp HAP/BUILD_NATIVE_CONNECTOR_PILOT.ps1 "$MASTER/08_NATIVE_PRIVATE_ADDENDUM/"
+          cp HAP/donors/NATIVE_CONNECTOR_SSOT_v0.1.md "$MASTER/08_NATIVE_PRIVATE_ADDENDUM/"
+          cat > "$MASTER/08_NATIVE_PRIVATE_ADDENDUM/00_NATIVE_PRIVATE_README.md" <<'EOF'
+# Native Connector — Private Addendum
+
+The actual donor-derived meshes are intentionally not published in the public repository artifact.
+
+Locked donor source SHA-256:
+31818bf1c329a458ef9a1a74e477bc0e0d5e2403e64700c77ec5f798962fd4c1
+
+Expected nominal 1.000 outputs:
+- HAP_NATIVE_CONNECTOR_ONLY_scale_1.000_v0.1.stl
+  0d716ce770dc0d3b06e35b5566e8509cbce381894ee811f1c49da86ec4fb7dfd
+- HAP_NATIVE_CORE_BRIDGE_scale_1.000_v0.1.stl
+  991b4a94f8a5a73524626fb6d55bec7772f58f709f2518790c278d1c48dbffe4
+
+Adding these two locked files to the public 55-STL master produces the private 57-STL no-Technic set.
+EOF
+
+          mkdir -p "$MASTER/09_RELEASE_EVIDENCE_AND_GATES"
+          for f in FINALIZATION_GUIDE_v1.0.md FINAL_RELEASE_GATE_MATRIX_v1.0.md PHYSICAL_TEST_MATRIX_v0.1.md STRUCTURAL_TEST_MATRIX_v0.1.md TECHNIC_AND_DONOR_TEST_MATRIX_v0.1.md INTERFACE_SSOT_v0.1.md SEAL_PHYSICAL_PROFILE.ps1 BUILD_PHYSICAL_PILOT.ps1 VALIDATE_PHYSICAL_PILOT.ps1 VALIDATE_STRUCTURAL_RESULTS.ps1 VALIDATE_SHOW_PROMOTION.ps1 FINAL_RELEASE_AUDIT.ps1 BUILD_FINAL_RELEASE.ps1; do
+            if [ -f "HAP/$f" ]; then cp "HAP/$f" "$MASTER/09_RELEASE_EVIDENCE_AND_GATES/"; fi
+          done
+
+          mkdir -p "$MASTER/10_PACKAGED_COMPONENTS"
+          cp prior/complete/HAP_COMPLETE_DIRECT_PRINT_NO_TECHNIC_NO_NATIVE_v0.2.zip* "$MASTER/10_PACKAGED_COMPONENTS/"
+          cp prior/lego/HAP_LEGO_STRUCTURAL_PACK_v0.1.zip* "$MASTER/10_PACKAGED_COMPONENTS/"
+          cp prior/lego/HAP_LEGO_STRUCTURAL_STARTER_v0.1.zip* "$MASTER/10_PACKAGED_COMPONENTS/"
+          cp prior/digital/HAP_DIGITAL_STL_SET_v0.1.zip* "$MASTER/10_PACKAGED_COMPONENTS/"
+          cp prior/preprint/HAP_PREPRINT_AUDITED_PUBLIC_NO_TECHNIC_v0.2.zip* "$MASTER/10_PACKAGED_COMPONENTS/"
+          cp prior/workbench/HAP_v0.1_PHYSICAL_WORKBENCH.zip "$MASTER/10_PACKAGED_COMPONENTS/"
+
+          cat > "$MASTER/00_READ_ME_FIRST.md" <<'EOF'
+# HAP ALL-IN-ONE MASTER v0.2
+
+Authoritative audited baseline: GitHub Actions run 36001817991 — SUCCESS.
+
+Contents:
+- 55-STL audited public no-Technic print master
+- 29-part LEGO Structural full pack
+- 15-part Structural starter pack
+- 6 separate Technic STL files
+- 47-STL development/calibration set
+- pre-print audit evidence
+- source CAD/scripts/tools/docs
+- private native-addendum contract
+- release/evidence gates
+- all major component ZIPs
+
+Reality:
+- DIGITAL PRE-PRINT MASTER: PASS
+- PHYSICAL FIT: PENDING because fit calibration was intentionally skipped
+- HAP FINAL v1.0.0: still blocked until real physical evidence exists
+EOF
+
+          printf "category,count\nready_to_print_public,55\nlego_structural_full,29\nlego_structural_starter,15\ntechnic_separate,6\ndigital_development,47\nprivate_native_expected,2\nprivate_complete_no_technic,57\n" > "$MASTER/MASTER_COUNTS.csv"
+
+      - name: Verify All-in-One tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          MASTER="HAP_ALL_IN_ONE_MASTER_v0.2"
+          test "$(find "$MASTER/01_READY_TO_PRINT_PUBLIC_55" -name "*.stl" | wc -l)" -eq 55
+          test "$(find "$MASTER/02_LEGO_STRUCTURAL_FULL_29" -name "*.stl" | wc -l)" -eq 29
+          test "$(find "$MASTER/03_LEGO_STRUCTURAL_STARTER_15" -name "*.stl" | wc -l)" -eq 15
+          test "$(find "$MASTER/04_TECHNIC_SEPARATE" -name "*.stl" | wc -l)" -eq 6
+          test "$(find "$MASTER/05_DIGITAL_DEVELOPMENT_47" -name "*.stl" | wc -l)" -eq 47
+          (cd "$MASTER" && find . -type f ! -name MASTER_SHA256SUMS.txt -print0 | sort -z | xargs -0 sha256sum > MASTER_SHA256SUMS.txt)
+
+      - name: Package and round-trip verify All-in-One
+        shell: bash
+        run: |
+          set -euo pipefail
+          MASTER="HAP_ALL_IN_ONE_MASTER_v0.2"
+          zip -qr HAP_ALL_IN_ONE_MASTER_v0.2.zip "$MASTER"
+          sha256sum HAP_ALL_IN_ONE_MASTER_v0.2.zip > HAP_ALL_IN_ONE_MASTER_v0.2.zip.sha256
+          mkdir _verify
+          unzip -q HAP_ALL_IN_ONE_MASTER_v0.2.zip -d _verify
+          test "$(find "_verify/$MASTER/01_READY_TO_PRINT_PUBLIC_55" -name "*.stl" | wc -l)" -eq 55
+          (cd "_verify/$MASTER" && sha256sum -c MASTER_SHA256SUMS.txt)
+          rm -rf _verify
+
+      - name: Upload All-in-One Master
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAP-all-in-one-master-v0.2
+          path: |
+            HAP_ALL_IN_ONE_MASTER_v0.2.zip
+            HAP_ALL_IN_ONE_MASTER_v0.2.zip.sha256
+          if-no-files-found: error

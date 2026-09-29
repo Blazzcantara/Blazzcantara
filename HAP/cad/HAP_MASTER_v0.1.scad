@@ -27,6 +27,13 @@ OFFSET_X = is_undef(OFFSET_X) ? 0.0 : OFFSET_X;
 OFFSET_Y = is_undef(OFFSET_Y) ? 0.0 : OFFSET_Y;
 TILE_ROTATION = is_undef(TILE_ROTATION) ? 0.0 : TILE_ROTATION;
 
+assert(LEGO_CLUTCH_DELTA >= -0.20 && LEGO_CLUTCH_DELTA <= 0.20,
+       "LEGO_CLUTCH_DELTA outside safe calibration range [-0.20,+0.20].");
+assert(GT_MALE_FLAT >= 29.40 && GT_MALE_FLAT <= 30.20,
+       "GT_MALE_FLAT outside guarded compatibility range.");
+assert(CORE_CLEARANCE >= 0.10 && CORE_CLEARANCE <= 0.60,
+       "CORE_CLEARANCE outside guarded compatibility range.");
+
 // -------------------------
 // Interface SSOT — nominal
 // -------------------------

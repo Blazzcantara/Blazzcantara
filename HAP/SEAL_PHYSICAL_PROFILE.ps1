@@ -77,6 +77,36 @@ foreach ($gate in $gateOrder) {
     if ($row.tested_real -notin @("YES","NO")) {
       throw "Invalid tested_real '$($row.tested_real)' in gate $gate."
     }
+
+    foreach ($ratingName in @("force_rating","wobble_rating")) {
+      $ratingText = $row.$ratingName
+      if (-not [string]::IsNullOrWhiteSpace($ratingText)) {
+        $rating = 0
+        if (-not [int]::TryParse($ratingText,[ref]$rating) -or $rating -lt 1 -or $rating -gt 5) {
+          throw "Gate $gate candidate $($row.candidate_id) has invalid $ratingName '$ratingText'; expected blank or integer 1-5."
+        }
+      }
+    }
+  }
+
+  # Row count alone is insufficient: duplicated values could otherwise hide a missing
+  # calibration candidate. Require exact unique set equality for every gate.
+  $actualValues = @($gateRows | ForEach-Object { $_.value } | Sort-Object -Unique)
+  $expectedValues = @($allowed[$gate] | Sort-Object -Unique)
+
+  if ($actualValues.Count -ne $expectedValues.Count) {
+    throw "Gate $gate does not contain the exact unique candidate value set."
+  }
+
+  for ($i = 0; $i -lt $expectedValues.Count; $i++) {
+    if ($actualValues[$i] -ne $expectedValues[$i]) {
+      throw "Gate $gate candidate set mismatch. Expected '$($expectedValues -join ",")'; got '$($actualValues -join ",")'."
+    }
+  }
+
+  $candidateIds = @($gateRows | ForEach-Object { $_.candidate_id })
+  if (@($candidateIds | Sort-Object -Unique).Count -ne $candidateIds.Count) {
+    throw "Gate $gate contains duplicate candidate_id values."
   }
 
   $winner = @($gateRows | Where-Object { $_.result -eq "PASS" })

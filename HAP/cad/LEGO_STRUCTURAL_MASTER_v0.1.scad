@@ -162,6 +162,10 @@ else if (PART == "PLATE_6x6")
     plate(6,6);
 else if (PART == "PLATE_8x8")
     plate(8,8);
+else if (PART == "PLATE_7x2")
+    plate(7,2);
+else if (PART == "PLATE_7x7")
+    plate(7,7);
 
 // C — risers
 else if (PART == "RISER_2x2_H2")
@@ -188,10 +192,14 @@ else if (PART == "FOUNDATION_6x6_H1")
     foundation(6,6,1);
 else if (PART == "FOUNDATION_8x8_H1")
     foundation(8,8,1);
+else if (PART == "FOUNDATION_7x7_H1")
+    foundation(7,7,1);
 else if (PART == "BRIDGE_SUPPORT_2x6_H5")
     bridge_support(2,6,5);
 else if (PART == "BRIDGE_SUPPORT_4x8_H3")
     bridge_support(4,8,3);
+else if (PART == "BRIDGE_SUPPORT_10x4_H3")
+    bridge_support(10,4,3);
 else if (PART == "CROSS_SUPPORT_6x6_H3")
     foundation(6,6,3);
 else if (PART == "PLATFORM_BLOCK_6x6_H2")
